@@ -52,7 +52,7 @@ type Login struct {
 
 type Category struct {
 	Id                int    `form:"id"`
-	CategoryName      string `form:"name" binding:"required"`
+	CategoryName      string `form:"categoryName" binding:"required"`
 	CategoryCreatedAt string `form:"created"`
 	CategoryUpdatedAt string `form:"updated"`
 }
@@ -531,7 +531,7 @@ func main() {
 		case event == sql.ErrNoRows:
 			// not found
 			// insert into db
-			_, err = db.Exec("INSERT INTO `categories`(`eventName`) VALUES (?);", request.CategoryName)
+			_, err = db.Exec("INSERT INTO `categories`(`categoryName`) VALUES (?);", request.CategoryName)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			}
@@ -605,6 +605,28 @@ func main() {
 			panic(err)
 		}
 		c.JSON(http.StatusOK, categories)
+	})
+
+	// get category by id
+	r.GET("/api/category/:id", func(c *gin.Context) {
+		var dbData Category
+		category := db.QueryRow("SELECT * FROM `categories` WHERE id = ?;", c.Param("id")).Scan(&dbData.Id, &dbData.CategoryName, &dbData.CategoryCreatedAt, &dbData.CategoryUpdatedAt)
+		switch {
+		case category == sql.ErrNoRows:
+			// not found
+			c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+			return
+		case category != nil:
+			// query failed
+			fmt.Println(colorRed, "Query failed\n"+category.Error(), colorEnd)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": category.Error()})
+			// log.Fatal(err)
+			return
+		default:
+			// found
+			c.JSON(http.StatusOK, category)
+			return
+		}
 	})
 
 	// get all ticket types

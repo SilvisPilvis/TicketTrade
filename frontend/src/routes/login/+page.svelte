@@ -1,8 +1,22 @@
 <script>
-    import axios from '../../services/axios';
-    let username, password, password_repeat, usernameError, passwordError, repeatError;
+    import axios from '$lib/axios';
+    let username, password, usernameError = false, passwordError = false;
     
     function login(){
+        if(username == "" || username == undefined){
+            usernameError = true;
+        }else{
+            usernameError = false;
+        }
+        if(password == "" || password == undefined){
+            passwordError = true;
+            // return;
+        }else{
+            passwordError = false;
+        }
+        if(password == undefined || password == "" || username == undefined || username == ""){
+            return;
+        }
         axios.post('/login', {
             username: username,
             password: password
@@ -14,14 +28,58 @@
             console.log(error);
         });
     }
-    </script>
+</script>
     
-    <main>
-    <input type="text" name="username" id="" bind:value={username} placeholder="username">
-    <input type="password" name="password" id="" bind:value={password} placeholder="password">
-    <button on:click={login}>Login</button>
-    </main>
-    
-    <style>
-    
-    </style>
+<main class="flex cen">
+    <div class="flex cen col">
+        <input type="text" name="username" id="" bind:value={username} placeholder="username">
+        {#if usernameError != false}
+            <p class="error">Username can't be empty.</p>
+        {/if}
+        <input type="password" name="password" id="" bind:value={password} placeholder="password">
+        {#if passwordError != false}
+            <p class="error">Password can't be empty.</p>
+        {/if}
+        <button on:click={login}>Login</button>
+    </div>
+</main>
+
+<style>
+    main{
+        height: 100vh;
+        width: 100vw;
+    }
+    .flex {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .cen {
+        justify-content: center;
+        align-items: center;
+    }
+    .col {
+        flex-direction: column;
+    }
+    .error {
+        color: red;
+        font-size: 1.3rem;
+        height: min-content;
+        margin: 0;
+        /* background-color: ; */
+        /* text-shadow: 10px, 10px, 1px, rgb(97, 10, 10); */
+    }
+    input {
+        padding: 1rem;
+        border: none;
+        outline: none;
+        border-radius: 0.2rem;
+        background-color: gray;
+        font-size: 12pt;
+        margin: 1rem;
+    }
+    button {
+        padding: 0.7rem 6rem 0.7rem 6rem;
+        border: none;
+        outline: none;
+    }
+</style>
