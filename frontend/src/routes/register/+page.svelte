@@ -68,10 +68,6 @@
             padding: 0;
             margin: 0;
         }
-        main{
-        height: 100vh;
-        width: 100vw;
-    }
     .flex {
         display: flex;
         flex-wrap: wrap;

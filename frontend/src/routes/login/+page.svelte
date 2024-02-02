@@ -1,6 +1,11 @@
 <script>
     import axios from '$lib/axios';
-    let username, password, usernameError = false, passwordError = false;
+    import Cookies from 'js-cookie';
+    let username, password, fail, usernameError = false, passwordError = false;
+
+    if(Cookies.get('token') != undefined){
+        window.location = 'http://localhost:5173/';
+    }
     
     function login(){
         if(username == "" || username == undefined){
@@ -17,15 +22,18 @@
         if(password == undefined || password == "" || username == undefined || username == ""){
             return;
         }
+        fail = "";
         axios.post('/login', {
             username: username,
             password: password
         })
         .then(function (response) {
+            Cookies.set("token", response.data);
             console.log(response.data);
         })
         .catch(function (error) {
             console.log(error);
+            fail = error.message;
         });
     }
 </script>
@@ -39,6 +47,9 @@
         <input type="password" name="password" id="" bind:value={password} placeholder="password">
         {#if passwordError != false}
             <p class="error">Password can't be empty.</p>
+        {/if}
+        {#if fail != "" && fail != undefined}
+            <p class="error">{fail}</p>
         {/if}
         <button on:click={login}>Login</button>
     </div>

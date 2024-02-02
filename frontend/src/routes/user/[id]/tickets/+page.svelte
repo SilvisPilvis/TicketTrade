@@ -5,7 +5,7 @@
     let res;
 onMount(async () => {
     try{
-        const response = await axios.get(`/bought/ticket/${data.data}`);
+        const response = await axios.get(`/${data.data}/tickets`);
         res = response.data;
         console.log(res);
     }catch (e){
@@ -17,13 +17,23 @@ onMount(async () => {
 
 <main>
     {#if res != "" && res != undefined}
-        <div>
+        {#each res as ticket}
+            <div>
+                <p>{ticket.EventName}</p>
+                <p>{ticket.UserName}</p>
+                <p>{ticket.TicketBoughtAt}</p>
+                <p>{ticket.TicketLocation}</p>
+                <p>{ticket.TicketDate}</p>
+                <p>{ticket.TicketSeat}</p>
+            </div>
+        {/each}
+        <!-- <div>
             <img src={"http://localhost:8000/"+res.QrPath} alt="">
             <p>{res.UserName}</p>
             <p>{res.EventName}</p>
             <p>{res.TicketDate}</p>
             <p>{res.TicketLocation}</p>
             <p>{res.TicketSeat}</p>
-        </div>
+        </div> -->
     {/if}
 </main>

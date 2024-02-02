@@ -1,28 +1,40 @@
 <nav class="flex row">
-    <a href="/"><div class="nav-button">Home</div></a>
-    <a href="/login"><div class="nav-button">Login</div></a>
-    <a href="/register"><div class="nav-button">Register</div></a>
+    <a href="/" class="nav-button">Home</a>
+    <a href="/login" class="nav-button">Login</a>
+    <a href="/register" class="nav-button">Register</a>
 </nav>
 
 <style>
     .flex {
         display: flex;
-        flex-wrap: wrap;
+        width: 100%;
+        flex-direction: row;
+        /* justify-content: space-evenly; */
+        justify-content: space-around;
+        /* flex-wrap: wrap; */
     }
     .row {
         flex-direction: row;
     }
     nav {
-        position: absolute;
+        margin-bottom: 1rem;
     }
     .nav-button{
-        width: calc(100vw/3);
-        padding: 0.3rem 0 0.3rem;
-        background-color: rgba(28, 92, 183, 0.689);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0.5rem 0 0.5rem;
+        background-color: #B4ADEA;
+        color: #4F0147;
+        font-size: 1.25rem;
+        font-weight: 800;
+    }
+    .nav-button:hover{
+        filter: brightness(0.9);
+        /* background-color: #B4ADEA; */
     }
     a {
         text-decoration: none;
-        color: black;;
     }
 </style>
 

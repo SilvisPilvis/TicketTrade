@@ -41,6 +41,11 @@ type User struct {
 	Email    string `form:"email" binding:"required"`
 }
 
+type PasswordReset struct {
+	Email    string `form:"email" binding:"required"`
+	Password string `form:"password" binding:"required"`
+}
+
 type Login struct {
 	Username string `form:"username" binding:"required"`
 	Password string `form:"password" binding:"required"`
@@ -59,18 +64,19 @@ type Category struct {
 
 type Event struct {
 	Id               int    `form:"id"`
-	EventName        string `form:"eventName" binding:"required"`
-	EventDescription string `form:"eventDescription" binding:"required"`
-	EventCategory    int    `form:"eventCategory" binding:"required"`
-	EventDate        string `form:"eventDate" binding:"required"`
-	EventLocation    string `form:"eventLocation" binding:"required"`
-	EventImage       string `form:"eventImage" binding:"required"`
-	EventBanner      string `form:"eventBanner" binding:"required"`
-	EventCapacity    int    `form:"eventCapacity" binding:"required"`
-	EventTicketTypes string `form:"ticketTypes" binding:"required"`
-	SeatsRequired    int    `form:"seatsRequired" binding:"required"`
-	EventCreatedAt   string `form:"created"`
-	EventUpdatedAt   string `form:"updated"`
+	EventName        string `form:"eventName" json:"eventName" binding:"required"`
+	EventDescription string `form:"eventDescription" json:"eventDescription" binding:"required"`
+	EventCategory    int    `form:"eventCategory" json:"eventCategory" binding:"required"`
+	EventDate        string `form:"eventDate" json:"eventDate" binding:"required"`
+	EventLocation    string `form:"eventLocation" json:"eventLocation" binding:"required"`
+	EventImage       string `form:"eventImage" json:"eventImage" binding:"required"`
+	EventBanner      string `form:"eventBanner" json:"eventBanner" binding:"required"`
+	EventCapacity    int    `form:"eventCapacity" json:"eventCapacity" binding:"required"`
+	EventTicketTypes string `form:"ticketTypes" json:"ticketTypes" binding:"required"`
+	SeatsRequired    string `form:"seatsRequired"  json:"seatsRequired"`
+	// SeatsRequired    int    `form:"seatsRequired" binding:"required"`
+	EventCreatedAt string `form:"created"`
+	EventUpdatedAt string `form:"updated"`
 }
 
 type GetEvent struct {
@@ -83,15 +89,15 @@ type GetEvent struct {
 	EventImage       string `form:"eventImage" binding:"required"`
 	EventBanner      string `form:"eventBanner" binding:"required"`
 	EventCapacity    int    `form:"eventCapacity" binding:"required"`
-	SeatsRequired    int    `form:"seatsRequired" binding:"required"`
+	SeatsRequired    int    `form:"seatsRequired"`
 	EventCreatedAt   string `form:"created"`
 	EventUpdatedAt   string `form:"updated"`
 }
 
 type TicketTypes struct {
 	Id                int     `form:"id"`
-	TicketTypeName    string  `form:"name" binding:"required"`
-	TicketTypePrice   float64 `form:"price" binding:"required"`
+	TicketTypeName    string  `form:"typeName" json:"typeName" binding:"required"`
+	TicketTypePrice   float64 `form:"typePrice" json:"typePrice" binding:"required"`
 	TicketTypeCreated string  `form:"created"`
 	TicketTypeUpdated string  `form:"updated"`
 }
@@ -117,7 +123,7 @@ type Review struct {
 	Id              int    `form:"id"`
 	EventId         int    `form:"eventId" binding:"required"`
 	EventName       string `form:"eventName"`
-	UserId          int    `form:"userId" binding:"required"`
+	UserId          int    `form:"userId"`
 	UserName        string `form:"userName"`
 	Rating          int    `form:"rating" binding:"required"`
 	Comment         string `form:"comment" binding:"required"`
@@ -137,6 +143,12 @@ type BoughtTicket struct {
 	TicketDate           string `form:"ticketDate"`
 	TicketLocation       string `form:"ticketLocation"`
 	TicketSeat           string `form:"ticketSeat"`
+}
+
+type ReviewValid struct {
+	TicketId   int `form:"ticketId"`
+	UserId     int `form:"userId" binding:"required"`
+	TicketUsed int `form:"ticketUsed"`
 }
 
 func main() {
@@ -180,30 +192,18 @@ func main() {
 
 	// Set the router as the default one provided by Gin
 	r := gin.Default()
-	r.Use(cors.Default())
 	r.ForwardedByClientIP = true
-	r.SetTrustedProxies([]string{"http://127.0.0.1"})
+	r.SetTrustedProxies([]string{"http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:8000", "http://127.0.0.1:8000"})
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:5173"}
+	config.AllowCredentials = true
+	config.AllowHeaders = []string{"Content-Type", "Authorization"}
+
+	// r.Use(cors.Default())
+	r.Use(cors.New(config))
 
 	// serve static folder for qr codes
 	r.Static("/codes", "./codes")
-
-	// r.GET("/api/", func(c *gin.Context) {
-	// 	data, err := c.GetPostForm("data")
-	// 	if !err {
-	// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Couldn't get data"})
-	// 		return
-	// 	}
-	// 	var value = []byte(data)
-	// 	binId := hex.EncodeToString(value)
-	// 	c.JSON(http.StatusOK, binId)
-	// 	// var request Test
-	// 	// if err := c.ShouldBind(&request); err != nil {
-	// 	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	// 	// 	return
-	// 	// }
-	// 	// generateTestTickets(db, nil, request, c, nil, nil, nil)
-
-	// })
 
 	// register
 	r.POST("/api/register", func(c *gin.Context) {
@@ -232,7 +232,7 @@ func main() {
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			}
-			c.JSON(http.StatusOK, gin.H{"success": "User Registered Sucessfully."})
+			c.JSON(http.StatusOK, "User Registered Sucessfully.")
 			return
 		case username != nil:
 			// query failed
@@ -246,6 +246,47 @@ func main() {
 			return
 		}
 
+	})
+
+	// reset users password
+	r.PUT("/api/password/reset", func(c *gin.Context) {
+		var request PasswordReset
+		var dbData PasswordReset
+		if err := c.ShouldBind(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		found := db.QueryRow("SELECT password FROM `users` WHERE email = ? ;", request.Email).Scan(&dbData.Password)
+		switch {
+		case found == sql.ErrNoRows:
+			// not found
+
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "User with the specified email doesn't exist in database.",
+			})
+		case found != nil:
+			// query failed
+			fmt.Println(colorRed, "Query failed\n"+found.Error(), colorEnd)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": found.Error()})
+			// log.Fatal(err)
+			return
+		default:
+			// found
+			// update password into db
+			hash, err := argon2id.CreateHash(request.Password, argon2id.DefaultParams)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "Couldn't hash password: " + err.Error(),
+				})
+				log.Fatal(err)
+			}
+			_, err = db.Exec("UPDATE `users` SET `password`= ? WHERE `email` = ?;", hash, request.Email)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			c.JSON(http.StatusOK, "Password Reset Sucessfully.")
+		}
 	})
 
 	// login
@@ -286,7 +327,6 @@ func main() {
 			// Create a new token
 			t := jwt.NewWithClaims(jwt.SigningMethodHS256,
 				jwt.MapClaims{
-					// "iss":      "my-auth-server",
 					"Iat":       time.Now().Unix(),
 					"ExpiresAt": time.Now().Add(time.Minute * 5).Unix(),
 					"username":  request.Username,
@@ -325,28 +365,52 @@ func main() {
 				}
 				return []byte(jwtKey), nil
 			})
-
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JWT token." + err.Error()})
 			}
-
 			if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 				fmt.Println(claims)
 				_, err = db.Exec("DELETE FROM tokens WHERE jwtToken = ?", bearerToken[1])
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete token from database." + err.Error()})
 				}
-				c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
+				c.JSON(http.StatusOK, "Successfully logged out")
 			} else {
-				c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			}
 		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		}
+	})
+
+	// get all events
+	r.GET("/api/events", func(c *gin.Context) {
+		events := make([]*GetEvent, 0)
+		rows, err := db.Query("SELECT * FROM `events`;")
+
+		if err != nil {
+			log.Fatal(err)
+		}
+		// defer rows.Close()
+
+		for rows.Next() {
+			event := new(GetEvent)
+			if err := rows.Scan(&event.Id, &event.EventName, &event.EventDescription, &event.EventCategory, &event.EventDate, &event.EventLocation, &event.EventImage, &event.EventBanner, &event.EventCapacity, &event.SeatsRequired, &event.EventCreatedAt, &event.EventUpdatedAt); err != nil {
+				panic(err)
+			}
+			events = append(events, event)
+		}
+		if err := rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			panic(err)
+		}
+		c.JSON(http.StatusOK, events)
 	})
 
 	// create event & auto generate tickets
 	r.POST("/api/event/create", func(c *gin.Context) {
+		// fmt.Println(c.GetPostForm("ticketTypes"))
+		// fmt.Println(c.GetPostForm("a"))
 		var request Event
 		if err := c.ShouldBind(&request); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Bind error" + err.Error()})
@@ -364,6 +428,13 @@ func main() {
 			if request.EventTicketTypes == "" {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Ticket Types can't be empty"})
 				return
+			}
+
+			// check if seats required is false
+			var ticketSeat string = "A1"
+			if request.SeatsRequired == "" {
+				ticketSeat = "None"
+				request.SeatsRequired = "0"
 			}
 
 			// Convert the JSON string to a map
@@ -386,11 +457,6 @@ func main() {
 				panic(err)
 			}
 
-			var ticketSeat string = "A1"
-			if request.SeatsRequired == 0 {
-				ticketSeat = "None"
-			}
-
 			// loop for len of ticketTypeMap instead then another for count of tycket type
 			for i := 1; i < len(ticketTypeMap)+1; i++ {
 				// fmt.Println("i = ", i)
@@ -401,32 +467,8 @@ func main() {
 				// generateTickets(db, err, request, lasteventId, 0, nil, "", int64(ticketTypes[1]), "A1", c, nil)
 			}
 
-			c.JSON(http.StatusOK, gin.H{"message": "Added event and tickets"})
+			c.JSON(http.StatusOK, "Added event "+request.EventName+" and created tickets.")
 			// ---
-
-			// c.JSON(http.StatusInternalServerError, gin.H{"message": lasteventId})
-
-			// // convert the JSON obj to GOLANG map
-			// var ticketTypeMap map[int]interface{}
-
-			// // check if the JSON string is empty
-			// if request.EventTicketTypes == "" {
-			// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Ticket Types can't be empty"})
-			// 	return
-			// }
-
-			// // Convert the JSON string to a map
-			// err := json.Unmarshal([]byte(request.EventTicketTypes), &ticketTypeMap)
-			// if err != nil {
-			// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			// 	return
-			// }
-
-			// ticketData := new(Ticket)
-			// ticketData.EventDescription = request.EventDescription
-			// ticketData.EventName = request.EventName
-			// ticketData.
-
 		case exists != nil:
 			// query failed
 			fmt.Println(colorRed, "Query failed\n"+exists.Error(), colorEnd)
@@ -462,33 +504,9 @@ func main() {
 		}
 	})
 
-	// get all events
-	r.GET("/api/events/", func(c *gin.Context) {
-		events := make([]*GetEvent, 0)
-		rows, err := db.Query("SELECT * FROM `events`;")
-
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			event := new(GetEvent)
-			if err := rows.Scan(&event.Id, &event.EventName, &event.EventDescription, &event.EventCategory, &event.EventDate, &event.EventLocation, &event.EventImage, &event.EventBanner, &event.EventCapacity, &event.SeatsRequired, &event.EventCreatedAt, &event.EventUpdatedAt); err != nil {
-				panic(err)
-			}
-			events = append(events, event)
-		}
-		if err := rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			panic(err)
-		}
-		c.JSON(http.StatusOK, events)
-	})
-
 	// update event
 	r.PUT("/api/event/:id", func(c *gin.Context) {
-		var request Event
+		var request GetEvent
 		if err := c.ShouldBind(&request); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -498,7 +516,7 @@ func main() {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusOK, gin.H{"success": "Event updated Sucessfully."})
+		c.JSON(http.StatusOK, "Event updated Sucessfully.")
 	})
 
 	// delete event by id
@@ -535,7 +553,7 @@ func main() {
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			}
-			c.JSON(http.StatusOK, gin.H{"success": "Category created Sucessfully."})
+			c.JSON(http.StatusOK, "Category created Sucessfully.")
 			return
 		case event != nil:
 			// query failed
@@ -584,7 +602,7 @@ func main() {
 	})
 
 	// get all categories
-	r.GET("/api/categories/", func(c *gin.Context) {
+	r.GET("/api/categories", func(c *gin.Context) {
 		categories := make([]*Category, 0)
 		rows, err := db.Query("SELECT * FROM `categories`;")
 
@@ -624,7 +642,61 @@ func main() {
 			return
 		default:
 			// found
-			c.JSON(http.StatusOK, category)
+			c.JSON(http.StatusOK, dbData)
+			return
+		}
+	})
+
+	// get ticket type by id
+	r.GET("/api/ticket/type/:id", func(c *gin.Context) {
+		var dbData TicketTypes
+		category := db.QueryRow("SELECT * FROM `tickettypes` WHERE id = ?;", c.Param("id")).Scan(&dbData.Id, &dbData.TicketTypeName, &dbData.TicketTypePrice, &dbData.TicketTypeCreated, &dbData.TicketTypeUpdated)
+		switch {
+		case category == sql.ErrNoRows:
+			// not found
+			c.JSON(http.StatusNotFound, gin.H{"error": "Ticket type not found"})
+			return
+		case category != nil:
+			// query failed
+			fmt.Println(colorRed, "Query failed\n"+category.Error(), colorEnd)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": category.Error()})
+			// log.Fatal(err)
+			return
+		default:
+			// found
+			c.JSON(http.StatusOK, dbData)
+			return
+		}
+	})
+
+	// insert ticket type
+	r.POST("/api/ticket/type/create", func(c *gin.Context) {
+		var request TicketTypes
+		if err := c.ShouldBind(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		var dbData TicketTypes
+		ticketType := db.QueryRow("SELECT * FROM `tickettypes` WHERE ticketName = ?;", request.TicketTypeName).Scan(&dbData.TicketTypeName)
+		switch {
+		case ticketType == sql.ErrNoRows:
+			// not found
+			// insert into db
+			_, err = db.Exec("INSERT INTO `tickettypes`(`ticketName`, `typePrice`) VALUES ( ?, ?);", request.TicketTypeName, request.TicketTypePrice)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			c.JSON(http.StatusOK, "Category created Sucessfully.")
+			return
+		case ticketType != nil:
+			// query failed
+			fmt.Println(colorRed, "Query failed\n"+ticketType.Error(), colorEnd)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": ticketType.Error()})
+			// log.Fatal(err)
+			return
+		default:
+			// found
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Category already in database with name: " + request.TicketTypeName})
 			return
 		}
 	})
@@ -691,6 +763,30 @@ func main() {
 			return
 		}
 		c.JSON(http.StatusOK, "Ticket type updated successfully. "+strconv.FormatInt(affected, 10)+" rows affected")
+	})
+
+	// get all bought tickets
+	r.GET("/api/bought/tickets", func(c *gin.Context) {
+		tickets := make([]*BoughtTicket, 0)
+		rows, err := db.Query("SELECT boughttickets.id, boughttickets.ticketId, boughttickets.userId, boughttickets.createdAt, boughttickets.updatedAt, users.username, tickets.eventName FROM `boughttickets` INNER JOIN users ON boughttickets.userId = users.id INNER JOIN tickets ON boughttickets.ticketId = tickets.id;")
+
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			ticket := new(BoughtTicket)
+			if err := rows.Scan(&ticket.Id, &ticket.TicketId, &ticket.UserId, &ticket.TicketBoughtAt, &ticket.TicketBoughtAtUpdate, &ticket.UserName, &ticket.EventName); err != nil {
+				panic(err)
+			}
+			tickets = append(tickets, ticket)
+		}
+		if err := rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			panic(err)
+		}
+		c.JSON(http.StatusOK, tickets)
 	})
 
 	// get all users bought tickets
@@ -764,7 +860,7 @@ func main() {
 			return
 		}
 
-		category, err := db.Exec("UPDATE `boughttickets` SET `ticketId`= ?, `userId` = ? WHERE `id` = ? AND userId = ?;", request.TicketId, request.UserId, c.Param("id"))
+		category, err := db.Exec("UPDATE `boughttickets` SET `ticketId`= ?, `userId` = ? WHERE `id` = ?;", request.TicketId, request.UserId, c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
@@ -820,7 +916,7 @@ func main() {
 	})
 
 	// get all tickets
-	r.GET("/api/tickets/", func(c *gin.Context) {
+	r.GET("/api/tickets", func(c *gin.Context) {
 		tickets := make([]*Ticket, 0)
 		rows, err := db.Query("SELECT * FROM `tickets`;")
 
@@ -951,9 +1047,71 @@ func main() {
 		c.JSON(http.StatusOK, "Event review data updated successfully. "+strconv.FormatInt(affected, 10)+" rows affected")
 	})
 
+	// create review
+	r.POST("/api/review", func(c *gin.Context) {
+		// get user id from jwt
+		var found ReviewValid
+		authHeader := c.GetHeader("Authorization")
+		bearerToken := strings.Split(authHeader, " ")
+		jwtClaims := jwt.MapClaims{}
+
+		token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtKey), nil
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JWT token." + err.Error()})
+		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// check token expiry
+			expireTime := int64(claims["ExpiresAt"].(float64))
+			now := time.Now().Unix()
+			if now > expireTime {
+				fmt.Println("Token is expired")
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Expired token"})
+				return
+			}
+			jwtClaims = claims
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		}
+
+		ticketUsed := db.QueryRow("SELECT boughttickets.ticketId, boughttickets.userId, tickets.used FROM `boughttickets` INNER JOIN tickets ON boughttickets.ticketId = tickets.id WHERE boughttickets.userId = ? AND tickets.used = 1;", jwtClaims["userId"]).Scan(&found.TicketId, &found.UserId, &found.TicketUsed)
+		switch {
+		case ticketUsed == sql.ErrNoRows:
+			// not found
+			c.JSON(http.StatusNotFound, gin.H{"error": "You must visit the event to post review"})
+			return
+		case ticketUsed != nil:
+			// query failed
+			fmt.Println(colorRed, "Query failed\n"+ticketUsed.Error(), colorEnd)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": ticketUsed.Error()})
+			// log.Fatal(err)
+			return
+		default:
+			// found
+			var request Review
+			if err := c.ShouldBind(&request); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+
+			_, err = db.Exec("INSERT INTO `reviews`(`eventId`, `userId`, `rating`, `comment`) VALUES (?, ?, ?, ?);", request.EventId, jwtClaims["userId"], request.Rating, request.Comment)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			c.JSON(http.StatusOK, "Event review created successfully.")
+			return
+		}
+	})
+
 	fmt.Print(colorGreen, "Satarting server on http://localhost:", os.Getenv("PORT"), colorEnd, "\n")
 	fmt.Print(colorRed, "Fix ticket auto SEAT generate", colorEnd, "\n")
 	fmt.Print(colorRed, "Biletes izveidot PDF ar QR kodu", colorEnd, "\n")
+	fmt.Print(colorRed, "Implement ticket VERIFICATION", colorEnd, "\n")
 	fmt.Print(colorRed, "Atstat review tikai tas kurs nopircis bileti", colorEnd, "\n")
 	fmt.Print(colorRed, "Izveidot ReviewHandler", colorEnd, "\n")
 	fmt.Print(colorRed, "Izveidot BoughtTicketsHanlder", colorEnd, "\n")
@@ -971,7 +1129,6 @@ func main() {
 	// execFile("reviews.sql", db, nil, nil)
 	// execSeeder("seeder.sql", db)
 	// db.Close()
-
 	r.Run(":" + os.Getenv("PORT")) // listen and serve on 0.0.0.0:8000
 }
 
@@ -1087,3 +1244,20 @@ func ParseHexColorFast(s string) (c color.RGBA, err error) {
 	}
 	return
 }
+
+// func CORSMiddleware() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+// 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+// 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+// 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+// 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "false")
+
+// 		if c.Request.Method == "OPTIONS" {
+// 			c.AbortWithStatus(204)
+// 			return
+// 		}
+
+// 		c.Next()
+// 	}
+// }
