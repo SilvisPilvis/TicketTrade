@@ -36,8 +36,8 @@
     // console.log(success);
 </script>
 
-<main>
-    Edit Category:
+<main class="flex col">
+<h1>Edit Category:</h1>
 <input type="text" name="categoryName" id="" bind:value={categoryName} placeholder="Category Name">
 {#if fail != undefined && fail != ""}
     <p class="error">{fail}</p>
@@ -47,3 +47,27 @@
 {/if}
 <button on:click={editCategory}>Edit Category</button>
 </main>
+
+<style>
+    h1{
+        margin-left: 1rem;
+    }
+     input {
+        align-self: flex-start;
+        padding: 1rem;
+        border: none;
+        outline: none;
+        border-radius: 0.2rem;
+        background-color: var(--bg);
+        font-size: 12pt;
+        margin: 1rem;
+    }
+    button {
+        border-radius: 0.4rem;
+        margin-left: 1rem;
+        align-self: flex-start;
+        padding: 1.1rem 3.5rem 1.1rem 3.25rem;
+        border: none;
+        outline: none;
+    }
+</style>

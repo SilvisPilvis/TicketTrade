@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"image/color"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -20,6 +22,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
 	qrcode "github.com/skip2/go-qrcode"
+	"github.com/stripe/stripe-go/v76"
+	"github.com/stripe/stripe-go/v76/checkout/session"
+	"github.com/stripe/stripe-go/v76/customer"
+	"github.com/stripe/stripe-go/v76/price"
 )
 
 var colorEnd string = "\033[0m"
@@ -51,9 +57,10 @@ type Login struct {
 	Password string `form:"password" binding:"required"`
 }
 
-// type GenerateTicket struct {
-// 	Result string `form:"content" binding:"required"`
-// }
+type ChangeUserName struct {
+	Username string `form:"username" json:"username" binding:"required"`
+	Password string `form:"password" json:"password"`
+}
 
 type Category struct {
 	Id                int    `form:"id"`
@@ -73,8 +80,8 @@ type Event struct {
 	EventBanner      string `form:"eventBanner" json:"eventBanner" binding:"required"`
 	EventCapacity    int    `form:"eventCapacity" json:"eventCapacity" binding:"required"`
 	EventTicketTypes string `form:"ticketTypes" json:"ticketTypes" binding:"required"`
-	SeatsRequired    string `form:"seatsRequired"  json:"seatsRequired"`
-	// SeatsRequired    int    `form:"seatsRequired" binding:"required"`
+	// SeatsRequired    string `form:"seatsRequired"  json:"seatsRequired"`
+	SeatsRequired  int    `form:"seatsRequired" json:"seatsRequired"`
 	EventCreatedAt string `form:"created"`
 	EventUpdatedAt string `form:"updated"`
 }
@@ -143,12 +150,58 @@ type BoughtTicket struct {
 	TicketDate           string `form:"ticketDate"`
 	TicketLocation       string `form:"ticketLocation"`
 	TicketSeat           string `form:"ticketSeat"`
+	TicketImage          string `form:"image"`
 }
 
 type ReviewValid struct {
 	TicketId   int `form:"ticketId"`
 	UserId     int `form:"userId" binding:"required"`
 	TicketUsed int `form:"ticketUsed"`
+}
+
+type QRcode struct {
+	Content string `form:"content" binding:"required"`
+}
+
+// func init() {
+// 	// stripe.Key = os.Getenv("STRIPE_API_KEY")
+// 	stripe.Key = "sk_test_51LpZHXCqb1uF17J9Q3HuL7BSwMlsQK7EuUzGVRu4NaKEIBtMFIuCCFukJRXjI03kbbojC0S0XCepobU6WjxrVni600S3X7QUZM"
+// }
+
+func checkout(username string, userId int) (*stripe.CheckoutSession, error) {
+
+	customerParams := &stripe.CustomerParams{
+		Name: stripe.String(username),
+	}
+	customerParams.AddMetadata("username", username)
+	customerParams.AddMetadata("userId", strconv.Itoa(userId))
+	newCustomer, err := customer.New(customerParams)
+
+	if err != nil {
+		return nil, err
+	}
+	params := &stripe.CheckoutSessionParams{
+		Customer:   &newCustomer.ID,
+		SuccessURL: stripe.String("http://localhost:5173/success"),
+		CancelURL:  stripe.String("http://localhost:5173/cancel"),
+		PaymentMethodTypes: stripe.StringSlice([]string{
+			"card",
+		}),
+		// Discounts: discounts,
+		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			&stripe.CheckoutSessionLineItemParams{
+				Price:    stripe.String("price_1OgEvXCqb1uF17J9Iyq6G1Z0"),
+				Quantity: stripe.Int64(int64(1)),
+			},
+		},
+	}
+
+	session, err := session.New(params)
+	if err != nil {
+		log.Fatalf("Error creating session: %v\n", err)
+	}
+	return session, err
 }
 
 func main() {
@@ -160,15 +213,7 @@ func main() {
 	}
 
 	// stripe stuff don't touch
-	// config := &stripe.BackendConfig{
-	// 	MaxNetworkRetries: stripe.Int64(0), // Zero retries
-	// }
-	// sc := &client.API{}
-	// sc.Init("sk_key", &stripe.Backends{
-	// 	API:     stripe.GetBackendWithConfig(stripe.APIBackend, config),
-	// 	Uploads: stripe.GetBackendWithConfig(stripe.UploadsBackend, config),
-	// })
-	// stripe.Init(os.Getenv("STRIPE_API_KEY"), nil)
+	stripe.Key = "sk_test_51LpZHXCqb1uF17J9Q3HuL7BSwMlsQK7EuUzGVRu4NaKEIBtMFIuCCFukJRXjI03kbbojC0S0XCepobU6WjxrVni600S3X7QUZM"
 
 	// connect to the database
 	db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/biletes")
@@ -198,12 +243,61 @@ func main() {
 	config.AllowOrigins = []string{"http://localhost:5173"}
 	config.AllowCredentials = true
 	config.AllowHeaders = []string{"Content-Type", "Authorization"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 
 	// r.Use(cors.Default())
 	r.Use(cors.New(config))
 
 	// serve static folder for qr codes
 	r.Static("/codes", "./codes")
+
+	r.GET("/generate", func(c *gin.Context) {
+		// Call your function here
+		result := generateQr(c)
+		c.Data(http.StatusOK, "image/png", result)
+		// c.JSON(200, gin.H{
+		// 	"message": result,
+		// })
+	})
+
+	// stripe stuff
+	r.POST("/checkout", func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		bearerToken := strings.Split(authHeader, " ")
+		jwtClaims := jwt.MapClaims{}
+		token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtKey), nil
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JWT token." + err.Error()})
+		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// check token expiry
+			expireTime := int64(claims["ExpiresAt"].(float64))
+			now := time.Now().Unix()
+			if now > expireTime {
+				fmt.Println("Token is expired")
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Expired token"})
+				return
+			}
+			jwtClaims = claims
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid/No token"})
+		}
+		// stripeSession, err := checkout(c.PostForm("email"))
+		stripeSession, err := checkout(jwtClaims["username"].(string), int(jwtClaims["userId"].(float64)))
+		if err != nil {
+			log.Fatal(err, "\n")
+		}
+		c.JSON(200, gin.H{
+			"Id": stripeSession.ID,
+		})
+
+	})
 
 	// register
 	r.POST("/api/register", func(c *gin.Context) {
@@ -289,6 +383,119 @@ func main() {
 		}
 	})
 
+	// get username by userId
+	r.GET("/api/user/:id/username", func(c *gin.Context) {
+		var dbData ChangeUserName
+		event := db.QueryRow("SELECT username FROM `users` WHERE id = ?;", c.Param("id")).Scan(&dbData.Username)
+		switch {
+		case event == sql.ErrNoRows:
+			// not found
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		case event != nil:
+			// query failed
+			fmt.Println(colorRed, "Query failed\n"+event.Error(), colorEnd)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": event.Error()})
+			// log.Fatal(err)
+			return
+		default:
+			// found
+			c.JSON(http.StatusOK, dbData.Username)
+			return
+		}
+	})
+
+	// update username by id
+	r.PUT("/api/username", func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		bearerToken := strings.Split(authHeader, " ")
+		jwtClaims := jwt.MapClaims{}
+		token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtKey), nil
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JWT token." + err.Error()})
+		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// check token expiry
+			expireTime := int64(claims["ExpiresAt"].(float64))
+			now := time.Now().Unix()
+			if now > expireTime {
+				fmt.Println("Token is expired")
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Expired token"})
+				return
+			}
+			jwtClaims = claims
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid/No token"})
+		}
+
+		var request ChangeUserName
+		if err := c.ShouldBind(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		_, err = db.Exec("UPDATE `users` SET `username`= ? WHERE id = ?;", request.Username, jwtClaims["userId"])
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		c.JSON(http.StatusOK, "Username updated Sucessfully.")
+	})
+
+	// update password by id
+	r.PUT("/api/password", func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		bearerToken := strings.Split(authHeader, " ")
+		jwtClaims := jwt.MapClaims{}
+		token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtKey), nil
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JWT token." + err.Error()})
+		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// check token expiry
+			expireTime := int64(claims["ExpiresAt"].(float64))
+			now := time.Now().Unix()
+			if now > expireTime {
+				fmt.Println("Token is expired")
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Expired token"})
+				return
+			}
+			jwtClaims = claims
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		}
+
+		var request ChangeUserName
+		if err := c.ShouldBind(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		hash, err := argon2id.CreateHash(request.Password, argon2id.DefaultParams)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Couldn't hash password: " + err.Error(),
+			})
+			log.Fatal(err)
+		}
+		_, err = db.Exec("UPDATE `users` SET `password`= ? WHERE id = ?;", hash, jwtClaims["userId"])
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		c.JSON(http.StatusOK, "Password updated Sucessfully.")
+	})
+
 	// login
 	r.POST("/api/login", func(c *gin.Context) {
 		var request Login
@@ -328,7 +535,7 @@ func main() {
 			t := jwt.NewWithClaims(jwt.SigningMethodHS256,
 				jwt.MapClaims{
 					"Iat":       time.Now().Unix(),
-					"ExpiresAt": time.Now().Add(time.Minute * 5).Unix(),
+					"ExpiresAt": time.Now().Add(time.Hour * 1).Unix(),
 					"username":  request.Username,
 					"role":      dbData.Role,
 					"userId":    dbData.Id,
@@ -356,30 +563,26 @@ func main() {
 	r.POST("/api/logout", func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		bearerToken := strings.Split(authHeader, " ")
-
-		if len(bearerToken) == 2 {
-			token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
-				// Don't forget to validate the alg is what you expect:
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-				}
-				return []byte(jwtKey), nil
-			})
+		// fmt.Print("AuthHeader:", authHeader, "\n");
+		token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtKey), nil
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JWT token." + err.Error()})
+		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			_, err = db.Exec("DELETE FROM tokens WHERE jwtToken = ?", bearerToken[1])
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JWT token." + err.Error()})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete token from database." + err.Error()})
 			}
-			if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-				fmt.Println(claims)
-				_, err = db.Exec("DELETE FROM tokens WHERE jwtToken = ?", bearerToken[1])
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete token from database." + err.Error()})
-				}
-				c.JSON(http.StatusOK, "Successfully logged out")
-			} else {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			}
+			c.JSON(http.StatusOK, "Successfully logged out")
+			log.Print(claims, "\n")
 		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		}
 	})
 
@@ -432,9 +635,9 @@ func main() {
 
 			// check if seats required is false
 			var ticketSeat string = "A1"
-			if request.SeatsRequired == "" {
+			if request.SeatsRequired == 0 {
 				ticketSeat = "None"
-				request.SeatsRequired = "0"
+				// request.SeatsRequired = "0"
 			}
 
 			// Convert the JSON string to a map
@@ -677,7 +880,7 @@ func main() {
 			return
 		}
 		var dbData TicketTypes
-		ticketType := db.QueryRow("SELECT * FROM `tickettypes` WHERE ticketName = ?;", request.TicketTypeName).Scan(&dbData.TicketTypeName)
+		ticketType := db.QueryRow("SELECT ticketName FROM `tickettypes` WHERE ticketName = ?;", request.TicketTypeName).Scan(&dbData.TicketTypeName)
 		switch {
 		case ticketType == sql.ErrNoRows:
 			// not found
@@ -686,7 +889,21 @@ func main() {
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			}
-			c.JSON(http.StatusOK, "Category created Sucessfully.")
+
+			priceCents := int(request.TicketTypePrice * 100)
+			// stripe new product params
+			params := &stripe.PriceParams{
+				Currency:    stripe.String(string(stripe.CurrencyEUR)),
+				UnitAmount:  stripe.Int64(int64(priceCents)),
+				ProductData: &stripe.PriceProductDataParams{Name: stripe.String(request.TicketTypeName)},
+			}
+			result, err := price.New(params)
+			if err != nil {
+				log.Fatalf("Error creating price: %v\n", err)
+			}
+			log.Print(result)
+			// end stripe section
+			c.JSON(http.StatusOK, "Ticket Type created Sucessfully.")
 			return
 		case ticketType != nil:
 			// query failed
@@ -789,6 +1006,50 @@ func main() {
 		c.JSON(http.StatusOK, tickets)
 	})
 
+	// buy ticket by id
+	r.POST("/api/ticket/buy", func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		bearerToken := strings.Split(authHeader, " ")
+		jwtClaims := jwt.MapClaims{}
+		token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtKey), nil
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JWT token." + err.Error()})
+		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// check token expiry
+			expireTime := int64(claims["ExpiresAt"].(float64))
+			now := time.Now().Unix()
+			if now > expireTime {
+				fmt.Println("Token is expired")
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Expired token"})
+				return
+			}
+			jwtClaims = claims
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		}
+
+		deletedTicket, err := db.Exec("INSERT INTO `boughttickets`(`ticketId`, `userId`) VALUES (? , ?)", c.PostForm("ticktId"), jwtClaims["userId"])
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		affected, err := deletedTicket.RowsAffected()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		if affected == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User's ticket not found"})
+			return
+		}
+		c.JSON(http.StatusOK, "User successfully bought ticket.")
+	})
+
 	// get all users bought tickets
 	r.GET("/api/:userId/tickets", func(c *gin.Context) {
 		tickets := make([]*BoughtTicket, 0)
@@ -816,7 +1077,7 @@ func main() {
 	// get bought ticket by id
 	r.GET("/api/bought/ticket/:id", func(c *gin.Context) {
 		var bought BoughtTicket
-		event := db.QueryRow("SELECT boughttickets.id, boughttickets.ticketId, boughttickets.userId, boughttickets.createdAt, boughttickets.updatedAt, users.username, tickets.eventName, tickets.qrPath, tickets.ticketDate, tickets.ticketLocation, tickets.ticketSeat FROM `boughttickets` INNER JOIN users ON boughttickets.userId = users.id INNER JOIN tickets ON boughttickets.ticketId = tickets.id WHERE boughttickets.id = ?;", c.Param("id")).Scan(&bought.Id, &bought.TicketId, &bought.UserId, &bought.TicketBoughtAt, &bought.TicketBoughtAtUpdate, &bought.UserName, &bought.EventName, &bought.QrPath, &bought.TicketDate, &bought.TicketLocation, &bought.TicketSeat)
+		event := db.QueryRow("SELECT boughttickets.id, boughttickets.ticketId, boughttickets.userId, boughttickets.createdAt, boughttickets.updatedAt, users.username, tickets.eventName, tickets.qrPath, tickets.ticketDate, tickets.ticketLocation, tickets.ticketSeat, events.eventImage FROM `boughttickets` INNER JOIN users ON boughttickets.userId = users.id INNER JOIN tickets ON boughttickets.ticketId = tickets.id INNER JOIN events ON tickets.eventId = events.id WHERE boughttickets.id = ?;", c.Param("id")).Scan(&bought.Id, &bought.TicketId, &bought.UserId, &bought.TicketBoughtAt, &bought.TicketBoughtAtUpdate, &bought.UserName, &bought.EventName, &bought.QrPath, &bought.TicketDate, &bought.TicketLocation, &bought.TicketSeat, &bought.TicketImage)
 		switch {
 		case event == sql.ErrNoRows:
 			// not found
@@ -961,6 +1222,30 @@ func main() {
 		}
 	})
 
+	// get all tickets by event id
+	r.GET("/event/:eventId/tickets", func(c *gin.Context) {
+		eventTickets := make([]*Ticket, 0)
+		rows, err := db.Query("SELECT * FROM `tickets` WHERE eventId = ? AND used = 0;", c.Param("eventId"))
+
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			eventTicket := new(Ticket)
+			if err := rows.Scan(&eventTicket.Id, &eventTicket.EventId, &eventTicket.EventName, &eventTicket.EventDescription, &eventTicket.TicketTypeId, &eventTicket.TicketUID, &eventTicket.TicketSeat, &eventTicket.TicketUsed, &eventTicket.TickedQRPath, &eventTicket.TicketDate, &eventTicket.TicketLocation, &eventTicket.TicketCreatedAt, &eventTicket.TicketUpdatedAt); err != nil {
+				panic(err)
+			}
+			eventTickets = append(eventTickets, eventTicket)
+		}
+		if err := rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			panic(err)
+		}
+		c.JSON(http.StatusOK, eventTickets)
+	})
+
 	// get all reviews
 	r.GET("/event/:eventId/reviews", func(c *gin.Context) {
 		reviews := make([]*Review, 0)
@@ -1051,10 +1336,10 @@ func main() {
 	r.POST("/api/review", func(c *gin.Context) {
 		// get user id from jwt
 		var found ReviewValid
+
 		authHeader := c.GetHeader("Authorization")
 		bearerToken := strings.Split(authHeader, " ")
 		jwtClaims := jwt.MapClaims{}
-
 		token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
 			// Don't forget to validate the alg is what you expect:
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -1079,7 +1364,7 @@ func main() {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		}
 
-		ticketUsed := db.QueryRow("SELECT boughttickets.ticketId, boughttickets.userId, tickets.used FROM `boughttickets` INNER JOIN tickets ON boughttickets.ticketId = tickets.id WHERE boughttickets.userId = ? AND tickets.used = 1;", jwtClaims["userId"]).Scan(&found.TicketId, &found.UserId, &found.TicketUsed)
+		ticketUsed := db.QueryRow("SELECT boughttickets.ticketId, boughttickets.userId, tickets.used FROM `boughttickets` INNER JOIN tickets ON boughttickets.ticketId = tickets.id WHERE boughttickets.userId = ?;", jwtClaims["userId"]).Scan(&found.TicketId, &found.UserId, &found.TicketUsed)
 		switch {
 		case ticketUsed == sql.ErrNoRows:
 			// not found
@@ -1164,8 +1449,6 @@ func execSeeder(filename string, conn *sql.DB) {
 func generateTickets(conn *sql.DB, err error, request Event, lastInsertedEventId int64, ticketId int64, ticketBinIdError error, ticketBinId string, ticketType int64, ticketSeat string, c *gin.Context, ticket sql.Result) {
 	ticket, err = conn.Exec("INSERT INTO `tickets`(`eventId`, `eventName`, `eventDescription`, `ticketType`, `ticketSeat`, `ticketDate`, `ticketLocation`) VALUES (?, ?, ?, ?, ?, ?, ?);", lastInsertedEventId, request.EventName, request.EventDescription, ticketType, ticketSeat, request.EventDate, request.EventLocation)
 	if err != nil {
-		// failed to insert
-		// c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		panic(err)
 	}
 
@@ -1197,15 +1480,20 @@ func generateTickets(conn *sql.DB, err error, request Event, lastInsertedEventId
 			})
 			return
 		}
+		data, err := ioutil.ReadFile("./codes/" + strconv.Itoa(int(ticketId)) + ".png")
+		if err != nil {
+			log.Fatal(err)
+		}
+		str := base64.StdEncoding.EncodeToString(data)
 
-		ticket, err = conn.Exec("UPDATE `tickets` SET qrPath = ? WHERE id = ?;", "./codes/"+strconv.Itoa(int(ticketId))+".png", ticketId)
+		ticket, err = conn.Exec("UPDATE `tickets` SET qrPath = ? WHERE id = ?;", "data:image/jpeg;base64,"+str, ticketId)
 		if err != nil {
 			// failed to insert
 			// c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			panic(err)
 		}
 	}
-	c.JSON(http.StatusOK, "Ticket for "+request.EventName+" successfully.")
+	c.JSON(http.StatusOK, "Ticket for "+request.EventName+" created successfully.")
 }
 
 var errInvalidFormat = errors.New("invalid format")
@@ -1243,6 +1531,22 @@ func ParseHexColorFast(s string) (c color.RGBA, err error) {
 		err = errInvalidFormat
 	}
 	return
+}
+
+func generateQr(c *gin.Context) []byte {
+	var request QRcode
+	if err := c.ShouldBind(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return nil
+	}
+	code, err := qrcode.Encode(request.Content, qrcode.Medium, 256)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "QR code couldn't be generated",
+		})
+		return nil
+	}
+	return code
 }
 
 // func CORSMiddleware() gin.HandlerFunc {

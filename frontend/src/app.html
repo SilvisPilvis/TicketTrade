@@ -5,18 +5,54 @@
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<style>
-			* {
-				margin: 0;
-				padding: 0;
-				box-sizing: border-box;
+			:root{
+		        --bg: #B4ADEA;
+        		--fg: #4F0147;
+        		--real-bg:#dddaf2;
+			}
+/*			@import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');*/
+			@import url('https://fonts.googleapis.com/css2?family=Azeret+Mono&display=swap');
+			* , *::after, *::before {
+/*				font-family: 'Space Mono', monospace;*/
+				font-family: 'Azeret Mono', monospace;
+	            box-sizing: border-box;
+	            min-width: 0;
+	            padding: 0;
+	            margin: 0;
+	            color: var(--fg);
 			}
 			body{
-				background-color: #f5f4ff;
+				background-color: #dddaf2;
 				height: 100vh;
 			}
-			/* main{
-				height: 94%;
-			} */
+			.flex{
+				display: flex;
+				flex-wrap: wrap;
+			}
+			.col{
+				flex-direction: column;
+			}
+			.row{
+				flex-direction: row;
+			}
+			.cen{
+				justify-content: center;
+				align-items: center;
+			}
+		    .error{
+		        color: red;
+				padding: 0.3rem;
+		    	border-radius: 0.25rem;
+		        /* background-color: #b54a3a; */
+		    }
+		    .success{
+		    	padding: 0.3rem;
+		    	border-radius: 0.25rem;
+		    	color: lightgreen;
+		    	/* background-color: green; */
+		    .margin-t{
+		    	margin-top: 5rem;
+		    }
 		</style>
 		%sveltekit.head%
 	</head>

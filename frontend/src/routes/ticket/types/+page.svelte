@@ -3,35 +3,62 @@ import axios from "$lib/axios";
 import { onMount } from "svelte";
 import "iconify-icon"
 
-let res;
+let res, success, fail;
 onMount(async () => {
     try{
         //get event data
         const response = await axios.get('/ticket/types');
         res = response.data;
-        console.log(res);
+        // console.log(res);
     }catch (e){
         console.error("Error:", e);
     }
 })
 
-// axios.get('/ticket/types')
-//         .then(function (response) {
-//             console.log(response.data);
-//         })
-//         .catch(function (error) {
-//             console.log(error);
-//         });
+function deleteTicketType(id){
+    axios.delete(`/ticket/type/${id}`)
+            .then(function (response) {
+                console.log(response.data);
+                success = response.data;
+            })
+            .catch(function (error) {
+                console.log(error);
+                fail = error.response.data.error;
+            });
+}
 </script>
 
-<main>
+<main class="flex col cen">
 {#if res != "" && res != undefined}
-    {#each res as type}
-        <div>
-            <p>{type.TicketTypeName}</p>
-            <p>{type.TicketTypePrice} €</p>
-            <!-- <p>{type.TicketTypePrice} <iconify-icon icon="material-symbols:euro"  style="color: black"></iconify-icon></p> -->
-        </div>
-    {/each}
+    <div class="margin-t">
+        {#each res as type}
+            <div class="flex row cen">
+                <p>{type.typeName}</p>
+                <p> </p>
+                <p>{type.typePrice} €</p>
+                <a href={"/ticket/types/"+type.Id+"/edit"}><iconify-icon icon="material-symbols:edit"  style="color: black"></iconify-icon></a>
+                <button on:click={() => deleteTicketType(type.Id)}><iconify-icon icon="mdi:trash-can"  style="color: black"></iconify-icon></button>
+            </div>
+        {/each}
+        {#if fail != "" && fail != undefined}
+            <p class="error">{fail}</p>
+        {/if}
+        {#if success != "" && success != undefined}
+            <p class="success">{success}</p>
+        {/if}
+    </div>
 {/if}
 </main>
+
+<style>
+    .margin-t{
+        margin-top: 5rem;
+    }
+    button, a{
+        border: none;
+        margin: 0.5rem;
+        padding: 0.2rem;
+        border-radius: 0.4rem;
+        background-color: transparent;
+    }
+</style>

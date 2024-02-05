@@ -42,9 +42,9 @@ function updateBoughtTicketData(){
 }
 </script>
 
-<main>
+<main class="flex col cen">
     {#if res != "" && res != undefined}
-        <div>
+        <div class="margin-t flex col">
             <label for="">
                 Users Id:
                 <input type="number" min="1" step="1" bind:value={userId}>
@@ -69,3 +69,25 @@ function updateBoughtTicketData(){
         </div>
     {/if}
 </main>
+
+<style>
+    .margin-t{
+        margin-top: 5rem;
+    }
+    input {
+        padding: 1rem;
+        border: none;
+        outline: none;
+        border-radius: 0.2rem;
+        background-color: var(--bg);
+        font-size: 12pt;
+        margin: 1rem;
+    }
+    button {
+        background-color: var(--bg);
+        border-radius: 0.4rem;
+        padding: 0.7rem 5.7rem 0.7rem 5.7rem;
+        border: none;
+        outline: none;
+    }
+</style>

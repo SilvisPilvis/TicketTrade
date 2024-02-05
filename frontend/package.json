@@ -18,9 +18,13 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@stripe/stripe-js": "^2.4.0",
 		"axios": "^1.6.7",
 		"iconify-icon": "^1.0.8",
 		"js-cookie": "^3.0.5",
-		"jsonwebtoken": "^9.0.2"
+		"jsonwebtoken": "^9.0.2",
+		"jspdf-html2canvas": "^1.5.1",
+		"stripe": "^14.14.0",
+		"svelte-stripe": "^1.1.4"
 	}
 }

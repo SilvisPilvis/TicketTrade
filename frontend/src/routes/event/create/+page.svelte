@@ -24,6 +24,7 @@ onMount(async () => {
         allCategories = categories.data;
         const tickettypes = await axios.get('/ticket/types');
         allTypes = tickettypes.data;
+        console.log(allTypes)
     }catch (e){
         console.error("Error:", e);
     }
@@ -32,6 +33,41 @@ onMount(async () => {
 
 function createEvent(){
     const sumValues = obj => Object.values(obj).reduce((a, b) => a + b, 0);
+    if(title == "" || title == undefined){
+        failed = "Event name can't be empty.";
+        return;
+    }
+    if(description == "" || description == undefined){
+        failed = "Description can't be empty.";
+        return;
+    }
+    if(category == null || category == undefined){
+        failed = "Category can't be empty.";
+        return;
+    }
+    if(date == "" || date == undefined){
+        failed = "Date can't be empty.";
+        return;
+    }
+    if(Date.parse(date)-Date.parse(new Date()) < 0){
+        failed = "Date can't be in past.";
+        return;
+    }
+    if(location == "" || location == undefined){
+        failed = "Location can't be empty.";
+        return;
+    }
+    if(cover == "" || cover == undefined){
+        failed = "Cover can't be empty.";
+        return;
+    }
+    if(banner == "" || banner == undefined){
+        failed = "Banner can't be empty.";
+        return;
+    }
+    if(capacity <= 0 || capacity == undefined || capacity == null){
+        failed = "Capcity must be greather than 0.";
+    }
     // console.log(String(JSON.stringify(createTypes)));
     if(sumValues(createTypes) != capacity){
         console.error("Number of tickets must match the sum of all ticket types.")
@@ -44,9 +80,7 @@ function createEvent(){
         failed = "Number of tickets must be greater than 0 and/or sum of all ticket types must be greater than 0.";
         return;
     }
-    // console.log("All matches.")
-    // return;
-    // console.log(typeof JSON.stringify(createTypes));
+
     axios.post('/event/create', {
             eventName: title,
             eventDescription: description,
@@ -80,67 +114,108 @@ function addTicketType(id, amount, test){
 }
 </script>
 
-<main>
-    <label for="">
-        Event name:
-        <input type="text" name="" id="" bind:value={title}>
-    </label>
-    <label for="">
-        Event description:
-        <textarea name="" id="" cols="30" rows="10" bind:value={description}></textarea>
-    </label>
-    <label for="">
-        Event category:
-        <select name="" id=""bind:value={category}>
-            {#if allCategories != "" && allCategories != undefined}                
-                {#each allCategories as cat}
-                    <option value={cat.Id}>{cat.CategoryName}</option>
+<main class="flex col cen">
+    <div class="margin-t flex col cen">
+        {#if success != "" && success != undefined}
+            <p class="success">{success}</p>
+        {/if}
+        {#if failed != "" && failed != undefined}
+            <p class="error">{failed}</p>
+        {/if}
+        <label for="">
+            Event name:
+            <input type="text" name="" id="" bind:value={title}>
+        </label>
+        <label for="">
+            Event description:
+            <textarea name="" id="" cols="30" rows="10" bind:value={description}></textarea>
+        </label>
+        <label for="">
+            Event category:
+            <select name="" id=""bind:value={category}>
+                {#if allCategories != "" && allCategories != undefined}                
+                    {#each allCategories as cat}
+                        <option value={cat.Id}>{cat.CategoryName}</option>
+                    {/each}
+                {/if}
+            </select>
+        </label>
+        <label for="" >
+            Event date:
+            <input type="datetime-local" name="" id="" bind:value={date}>
+        </label>
+        <label for="">
+            Event location:
+            <input type="text" name="" id="" bind:value={location}>
+        </label>
+        <label for="">
+            Event image/cover:
+            <input type="text" name="" id="" bind:value={cover}>
+        </label>
+        <label for="">
+            Event banner:
+            <input type="text" name="" id="" bind:value={banner}>
+        </label>
+        <label for="">
+            Are seats required for this event?
+            <input type="checkbox" class="flex check" name="" id="" bind:checked={seatsRequired}>
+        </label>
+        <label for="">
+            Number of Tickets:
+            <input type="number" name="" id="" min="1" step="1" bind:value={capacity}>
+        </label>
+        <label for="">
+            Enter the how much of each ticket you want to print:
+            Ticket Types:
+            {#if allTypes != "" && allTypes != undefined}
+                {#each allTypes as type}
+                <label for="">
+                    {type.typeName}
+                    <input type="number" name="" id="" min="0" step="1" onchange="" on:change={(e) => addTicketType(type.Id, e.target.value, createTypes)}>
+                </label>
                 {/each}
             {/if}
-        </select>
-    </label>
-    <label for="" >
-        Event date:
-        <input type="datetime-local" name="" id="" bind:value={date}>
-    </label>
-    <label for="">
-        Event location:
-        <input type="text" name="" id="" bind:value={location}>
-    </label>
-    <label for="">
-        Event image/cover:
-        <input type="text" name="" id="" bind:value={cover}>
-    </label>
-    <label for="">
-        Event banner:
-        <input type="text" name="" id="" bind:value={banner}>
-    </label>
-    <label for="">
-        Are seats required for this event?
-        <input type="checkbox" name="" id="" bind:checked={seatsRequired}>
-    </label>
-    <label for="">
-        Number of Tickets:
-        <input type="number" name="" id="" min="1" step="1" bind:value={capacity}>
-    </label>
-    <label for="">
-        Enter the how much of each ticket you want to print:
-        Ticket Types:
-        {#if allTypes != "" && allTypes != undefined}
-            {#each allTypes as type}
-            <label for="">
-                {type.TicketTypeName}
-                <input type="number" name="" id="" min="0" step="1" onchange="" on:change={(e) => addTicketType(type.Id, e.target.value, createTypes)}>
-            </label>
-            {/each}
-        {/if}
-    </label>
-    <button on:click={createEvent}>Create Event</button>
-
-    {#if success != "" && success != undefined}
-        <p class="success">{success}</p>
-    {/if}
-    {#if failed != "" && failed != undefined}
-        <p class="error">{failed}</p>
-    {/if}
+        </label>
+        <button on:click={createEvent}>Create Event</button>
+    </div>
 </main>
+
+<style>
+    .margin-t{
+        margin-top: 5rem;
+    }
+    .check{
+        display: flex;
+        /* justify-content: space-between; */
+        align-items: flex-start;
+    }
+    input, select, textarea{
+        /* margin: 1rem; */
+        width: 100%;
+        gap: 1rem;
+        padding: 1rem;
+        border: none;
+        border-radius: 0.4rem;
+        background-color: var(--bg);
+        resize: none;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+        /* border: 1px solid red; */
+    }
+    label{
+        width: 100%;
+        /* border: 1px solid red; */
+        align-items: flex-start;
+        display: flex;
+        flex-direction: column;
+        /* justify-content: ; */
+        /* align-items: ; */
+    }
+    button{
+        margin: 1rem;
+        padding: 1rem;
+        border-radius: 0.4rem;
+        border: none;
+        background-color: var(--bg);
+    }
+</style>

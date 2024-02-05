@@ -1,7 +1,30 @@
+<script>
+    import Cookies from "js-cookie";
+    import axios from "$lib/axios";
+    function logout(){
+        const config = {
+            headers: { Authorization: `Bearer ${Cookies.get('token')}` }
+        };
+        axios.post('/logout', {}, config)
+        .then(function (response) {
+            console.log(response);
+            Cookies.remove('token');
+            window.location.replace("/login");
+            // success = response.data
+        })
+        .catch(function (error) {
+            Cookies.remove('token');
+            console.log(error.response);
+            // failed = error.response.data.error;
+        });
+    }
+</script>
+
 <nav class="flex row">
     <a href="/" class="nav-button">Home</a>
     <a href="/login" class="nav-button">Login</a>
     <a href="/register" class="nav-button">Register</a>
+    <button on:click={logout}>Logout</button>
 </nav>
 
 <style>
@@ -18,12 +41,14 @@
     }
     nav {
         margin-bottom: 1rem;
+        position: fixed;
     }
     .nav-button{
         display: flex;
         justify-content: center;
         align-items: center;
         padding: 0.5rem 0 0.5rem;
+        border-radius: 0.4rem;
         background-color: #B4ADEA;
         color: #4F0147;
         font-size: 1.25rem;
@@ -35,6 +60,12 @@
     }
     a {
         text-decoration: none;
+    }
+    button{
+        border: none;
+        background-color: var(--bg);
+        border-radius: 0.4rem;
+        padding: 0.5rem 0 0.5rem;
     }
 </style>
 

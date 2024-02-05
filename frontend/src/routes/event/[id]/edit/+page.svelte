@@ -50,52 +50,50 @@ function updateEventData(){
 }
 </script>
 
-<main>
+<main class="flex cen col">
     {#if res != "" && res != undefined}
-    <label for="">
+    <div class="margin-t flex cen col">
+        <label for="">
         Event name:
         <input type="text" name="" id="" bind:value={title}>
-    </label>
-    <label for="">
-        Event description:
-        <textarea name="" id="" cols="30" rows="10">{description}</textarea>
-    </label>
-    <label for="">
+        </label>
+        <label for="">
+            Event description:
+            <textarea name="" id="" cols="30" rows="10">{description}</textarea>
+        </label>
+        <label for="">
         Event category:
         <select name="" id=""bind:value={category}>
-            <option value={res.eventCategory}>{res.eventCategory}</option>
-            {#if allCategories != "" && allCategories != undefined}                
-                {#each allCategories as cat}
-                    <option value={cat.Id}>{cat.CategoryName}</option>
-                {/each}
-            {/if}
+        <option value={res.eventCategory}>{res.eventCategory}</option>
+        {#if allCategories != "" && allCategories != undefined}                
+            {#each allCategories as cat}
+                <option value={cat.Id}>{cat.CategoryName}</option>
+            {/each}
+        {/if}
         </select>
-    </label>
-    <label for="" >
-        Event date:
-        <input type="datetime-local" name="" id="" bind:value={date}>
-    </label>
-    <label for="">
-        Event location:
-        <input type="text" name="" id="" bind:value={location}>
-    </label>
-    <label for="">
-        Event image/cover:
-        <input type="text" name="" id="" bind:value={cover}>
-    </label>
-    <label for="">
-        Event banner:
-        <input type="text" name="" id="" bind:value={banner}>
-    </label>
-    <label for="">
-        Are seats required for this event?
-        <input type="checkbox" name="" id="" bind:checked={seatsRequired}>
-    </label>
-    <label for="">
-        Number of seats:
-        <input type="number" name="" id="" min="1" step="1" bind:value={capacity}>
-    </label>
-    <button on:click={updateEventData}>Update Event</button>
+        </label>
+        <label for="" >
+            Event date:
+            <input type="datetime-local" name="" id="" bind:value={date}>
+        </label>
+        <label for="">
+            Event location:
+            <input type="text" name="" id="" bind:value={location}>
+        </label>
+        <label for="">
+            Event image/cover:
+            <input type="text" name="" id="" bind:value={cover}>
+        </label>
+        <label for="">
+            Event banner:
+            <input type="text" name="" id="" bind:value={banner}>
+        </label>
+        <label for="">
+            Are seats required for this event?
+            <input type="checkbox" name="" id="" bind:checked={seatsRequired}>
+        </label>
+        <button on:click={updateEventData}>Update Event</button>
+    </div>
     {/if}
     {#if success != "" && success != undefined}
         <p class="success">{success}</p>
@@ -104,3 +102,29 @@ function updateEventData(){
         <p class="error">{failed}</p>
     {/if}
 </main>
+
+<style>
+    .margin-t{
+        margin-top: 5rem;
+    }
+    input, select, button{
+        margin: 1rem 1rem;
+        padding: 1rem;
+        border: none;
+        border-radius: 0.4rem;
+        background-color: var(--bg);
+    }
+    textarea{
+        border: none;
+        border-radius: 0.4rem;
+        background-color: var(--bg);
+        resize: none;
+    }
+/*    input[type=checkbox]{
+        width: 10rem;
+        padding: 1rem;
+        border: none;
+        border-radius: 0.4rem;
+        background-color: var(--bg);
+    }*/
+</style>

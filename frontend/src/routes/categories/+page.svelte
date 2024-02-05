@@ -31,10 +31,12 @@ function deleteCategory(id){
 <h1>All categories:</h1>
 {#if data != undefined && data != ""}    
     {#each data as category}
-        <div>
+        <div class="category flex row between cen">
             <div>{category.CategoryName}</div>
-            <a href="../category/{category.Id}/edit"><iconify-icon icon="material-symbols:edit-square" style="color: black"></iconify-icon></a>
-            <iconify-icon icon="mdi:trash-can"  style="color: black" on:click={() => deleteCategory(0)}></iconify-icon>
+            <div class="flex row">
+                <a href="../category/{category.Id}/edit"><iconify-icon icon="material-symbols:edit-square" style="color: black"></iconify-icon></a>
+                <iconify-icon class="flex cen" icon="mdi:trash-can"  style="color: black" on:click={() => deleteCategory(0)}></iconify-icon>
+            </div>
         </div>
     {/each}
     {#if failed != "" && failed != undefined}
@@ -47,5 +49,23 @@ function deleteCategory(id){
 </main>
 
 <style>
-    
+    h1{
+        margin-left: 1rem;
+    }
+    .category{
+        background-color: var(--bg);
+        margin: 1rem;
+        padding: 0.7rem;
+        max-width: 15rem;
+        border-radius: 0.4rem;
+    }
+    .between{
+        justify-content: space-between;
+    }
+    iconify-icon{
+        cursor: pointer;
+    }
+    iconify-icon, a{
+        padding: 0.3rem;
+    }
 </style>

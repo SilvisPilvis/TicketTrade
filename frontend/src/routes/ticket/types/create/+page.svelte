@@ -29,14 +29,29 @@
     }
 </script>
 
-<main>
-    <input type="text" name="" id="" bind:value={typeName}>
-    <input type="number" name="" id="" min="0.01" step="0.01" bind:value={typePrice}>
-    <button on:click={createTicketType}>Create Ticket Type</button>
-    {#if fail != "" && fail != undefined}
-        <p class="error">{fail}</p>
-    {/if}
-    {#if success != "" && success != undefined}
-        <p class="error">{success}</p>
-    {/if}
+<main class="flex col cen">
+    <div class="margin-t flex col">
+        <input type="text" name="" id="" bind:value={typeName} placeholder="Type name">
+        <input type="number" name="" id="" min="0.01" step="0.01" bind:value={typePrice} placeholder="Type Price">
+        <button on:click={createTicketType}>Create Ticket Type</button>
+        {#if fail != "" && fail != undefined}
+            <p class="error">{fail}</p>
+        {/if}
+        {#if success != "" && success != undefined}
+            <p class="success">{success}</p>
+        {/if}
+    </div>
 </main>
+
+<style>
+    .margin-t{
+        margin-top: 5rem;
+    }
+    input, button{
+        margin: 1rem;
+        padding: 0.6rem;
+        border: none;
+        border-radius: 0.4rem;
+        background-color: var(--bg);
+    }
+</style>

@@ -29,7 +29,8 @@
         })
         .then(function (response) {
             Cookies.set("token", response.data);
-            console.log(response.data);
+            window.location = '/'
+            // console.log(response.data);
         })
         .catch(function (error) {
             console.log(error);
@@ -84,12 +85,14 @@
         border: none;
         outline: none;
         border-radius: 0.2rem;
-        background-color: gray;
+        background-color: var(--bg);
         font-size: 12pt;
         margin: 1rem;
     }
     button {
-        padding: 0.7rem 6rem 0.7rem 6rem;
+        background-color: var(--bg);
+        border-radius: 0.4rem;
+        padding: 0.7rem 5.7rem 0.7rem 5.7rem;
         border: none;
         outline: none;
     }
