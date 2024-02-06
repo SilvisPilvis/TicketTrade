@@ -24,7 +24,7 @@
     <a href="/" class="nav-button">Home</a>
     <a href="/login" class="nav-button">Login</a>
     <a href="/register" class="nav-button">Register</a>
-    <button on:click={logout}>Logout</button>
+    <button on:click={logout} class="nav-button">Logout</button>
 </nav>
 
 <style>
@@ -42,6 +42,7 @@
     nav {
         margin-bottom: 1rem;
         position: fixed;
+        background-color: var(--bg);
     }
     .nav-button{
         display: flex;

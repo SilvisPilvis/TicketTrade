@@ -26,6 +26,7 @@ import (
 	"github.com/stripe/stripe-go/v76/checkout/session"
 	"github.com/stripe/stripe-go/v76/customer"
 	"github.com/stripe/stripe-go/v76/price"
+	// "github.com/stripe/stripe-go/webhook"
 )
 
 var colorEnd string = "\033[0m"
@@ -101,6 +102,13 @@ type GetEvent struct {
 	EventUpdatedAt   string `form:"updated"`
 }
 
+type GetOrder struct {
+	Criteria string `form:"criteria" json:"criteria"`
+	Order    string `form:"order" json:"order"`
+	Category string `form:"category" json:"category"`
+	Keyword  string `form:"keyword" json:"keyword"`
+}
+
 type TicketTypes struct {
 	Id                int     `form:"id"`
 	TicketTypeName    string  `form:"typeName" json:"typeName" binding:"required"`
@@ -124,6 +132,11 @@ type Ticket struct {
 	TicketLocation   string `form:"ticketLocation"`
 	TicketCreatedAt  string `form:"created"`
 	TicketUpdatedAt  string `form:"updated"`
+}
+
+type BuyTicket struct {
+	EventId  int `form:"eventId" json:"eventId"`
+	TicketId int `form:"ticketId" json:"ticketId" binding:"required"`
 }
 
 type Review struct {
@@ -154,9 +167,11 @@ type BoughtTicket struct {
 }
 
 type ReviewValid struct {
-	TicketId   int `form:"ticketId"`
-	UserId     int `form:"userId" binding:"required"`
-	TicketUsed int `form:"ticketUsed"`
+	TicketId int    `form:"ticketId" json:"ticketId"`
+	UserId   int    `form:"userId" json:"userId"`
+	EventId  int    `form:"eventId" json:"eventId" binding:"required"`
+	Rating   int    `form:"rating" json:"rating"`
+	Comment  string `form:"comment" json:"comment"`
 }
 
 type QRcode struct {
@@ -168,7 +183,7 @@ type QRcode struct {
 // 	stripe.Key = "sk_test_51LpZHXCqb1uF17J9Q3HuL7BSwMlsQK7EuUzGVRu4NaKEIBtMFIuCCFukJRXjI03kbbojC0S0XCepobU6WjxrVni600S3X7QUZM"
 // }
 
-func checkout(username string, userId int) (*stripe.CheckoutSession, error) {
+func checkout(username string, userId int, eventId string) (*stripe.CheckoutSession, error) {
 
 	customerParams := &stripe.CustomerParams{
 		Name: stripe.String(username),
@@ -182,7 +197,7 @@ func checkout(username string, userId int) (*stripe.CheckoutSession, error) {
 	}
 	params := &stripe.CheckoutSessionParams{
 		Customer:   &newCustomer.ID,
-		SuccessURL: stripe.String("http://localhost:5173/success"),
+		SuccessURL: stripe.String("http://localhost:5173/success/" + eventId),
 		CancelURL:  stripe.String("http://localhost:5173/cancel"),
 		PaymentMethodTypes: stripe.StringSlice([]string{
 			"card",
@@ -203,6 +218,70 @@ func checkout(username string, userId int) (*stripe.CheckoutSession, error) {
 	}
 	return session, err
 }
+
+// func handleWebhook(c *gin.Context, db *sql.DB) {
+// 	const MaxBodyBytes = int64(65536)
+// 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, MaxBodyBytes)
+
+// 	payload, err := ioutil.ReadAll(c.Request.Body)
+// 	if err != nil {
+// 		c.String(http.StatusBadRequest, "Error reading reques body: %v\n", err)
+// 		return
+// 	}
+// 	// --- official docs
+// 	endpointSecret := os.Getenv("STRIPE_WEBHOOK")
+
+// 	event, err := webhook.ConstructEvent(payload, req.Header.Get("Stripe-Signature"),
+// 		endpointSecret)
+
+// 	if err != nil {
+// 		fmt.Fprintf(os.Stderr, "Error verifying webhook signature: %v\n", err)
+// 		// w.WriteHeader(http.StatusBadRequest) // Return a 400 error on a bad signature
+// 		c.Writer.WriteHeader(http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	switch event.Type {
+// 	case "charge.succeeded":
+// 		boughtTicket, err := db.Exec("INSERT INTO `boughttickets`(`ticketId`, `userId`) VALUES (? , ?)", c.PostForm("ticktId"), 1)
+// 		if err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		}
+// 		log.Print(boughtTicket)
+// 		// Then define and call a function to handle the event charge.succeeded
+// 	// ... handle other event types
+// 	default:
+// 		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
+// 	}
+// 	c.Writer.WriteHeader(http.StatusOK)
+// 	// --- end offifal docs
+
+// 	// event := stripe.Event{}
+
+// 	// if err := json.Unmarshal(payload, &event); err != nil {
+// 	// 	c.String(http.StatusBadRequest, "Failed to parse webhook body json: %v\n", err)
+// 	// 	return
+// 	// }
+
+// 	// // Handle the checkout.session.completed event
+// 	// if event.Type == "checkout.session.completed" {
+// 	// 	var session stripe.CheckoutSession
+// 	// 	err := json.Unmarshal(event.Data.Raw, &session)
+// 	// 	if err != nil {
+// 	// 		c.String(http.StatusBadRequest, "Error parsing webhook JSON: %v\n", err)
+// 	// 		return
+// 	// 	}
+// 	// 	// The checkout session was successful, you can add your business logic here
+// 	// 	boughtTicket, err := db.Exec("INSERT INTO `boughttickets`(`ticketId`, `userId`) VALUES (? , ?)", c.PostForm("ticktId"), 1)
+// 	// 	if err != nil {
+// 	// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 	// 	}
+// 	// 	log.Print(boughtTicket)
+// 	// 	// c.String(http.StatusOK, "Checkout Session completed successfully!")
+// 	// } else {
+// 	// 	c.String(http.StatusBadRequest, "Unhandled event type: %s\n", event.Type)
+// 	// }
+// }
 
 func main() {
 
@@ -260,8 +339,45 @@ func main() {
 		// })
 	})
 
+	r.POST("/add/ticket/:id", func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		bearerToken := strings.Split(authHeader, " ")
+		jwtClaims := jwt.MapClaims{}
+		token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtKey), nil
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JWT token." + err.Error()})
+		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// check token expiry
+			expireTime := int64(claims["ExpiresAt"].(float64))
+			now := time.Now().Unix()
+			if now > expireTime {
+				fmt.Println("Token is expired")
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Expired token"})
+				return
+			}
+			jwtClaims = claims
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid/No token"})
+		}
+
+		boughtTicket, err := db.Exec("INSERT INTO `boughttickets`(`ticketId`, `userId`) VALUES (? , ?)", c.Param("id"), jwtClaims["userId"])
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		log.Print(boughtTicket)
+		c.JSON(http.StatusOK, "Bought Ticket successfully.")
+	})
+
 	// stripe stuff
-	r.POST("/checkout", func(c *gin.Context) {
+	r.POST("/checkout/:id", func(c *gin.Context) {
+		fmt.Print(c.Param("id"))
 		authHeader := c.GetHeader("Authorization")
 		bearerToken := strings.Split(authHeader, " ")
 		jwtClaims := jwt.MapClaims{}
@@ -289,7 +405,7 @@ func main() {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid/No token"})
 		}
 		// stripeSession, err := checkout(c.PostForm("email"))
-		stripeSession, err := checkout(jwtClaims["username"].(string), int(jwtClaims["userId"].(float64)))
+		stripeSession, err := checkout(jwtClaims["username"].(string), int(jwtClaims["userId"].(float64)), c.Param("id"))
 		if err != nil {
 			log.Fatal(err, "\n")
 		}
@@ -588,12 +704,47 @@ func main() {
 
 	// get all events
 	r.GET("/api/events", func(c *gin.Context) {
+		// var request GetOrder
+		// if err := c.ShouldBind(&request); err != nil {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// 	return
+		// }
+
+		params := c.Request.URL.Query()
+
+		// for key, params := range params {
+		// 	for i, param := range params {
+		// 		if len(param) <= 0 {
+		// 			// Query parameter is empty
+		// 			fmt.Printf("Query parameter '%s' at index %d is empty\n", key, i)
+		// 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or Empty query parameter"})
+		// 			return
+		// 		} else {
+		// 			// Query parameter is not empty
+		// 			fmt.Printf("Query parameter '%s' at index %d is not empty and its value is '%s'\n", key, i, param)
+		// 		}
+		// 	}
+		// }
+
+		// rows, err := *&sql.Rows{}, ""
+
 		events := make([]*GetEvent, 0)
-		rows, err := db.Query("SELECT * FROM `events`;")
+		// if params["keyword"][0] == "" || " " {
+		// 	rows, err = db.Query("SELECT * FROM `events` WHERE eventCategory = ? ORDER BY ? "+params["order"][0]+";", params["category"][0], params["criteria"][0])
+		// } else {
+		// 	rows, err = db.Query("SELECT * FROM `events` WHERE eventCategory = ? AND `eventName` LIKE '%"+params["keyword"][0]+"%' ORDER BY ? "+params["order"][0]+";", params["category"][0], params["criteria"][0])
+		// }
+
+		rows, err := db.Query("SELECT * FROM `events` WHERE eventCategory = ? AND `eventName` LIKE '%"+params["keyword"][0]+"%' ORDER BY ? "+params["order"][0]+";", params["category"][0], params["criteria"][0])
 
 		if err != nil {
 			log.Fatal(err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
+		// if rows == sql.ErrNoRows{
+		// 	c.JSON(http.StatusNotFound, gin.H{"error": "No events found"})
+		// 	return
+		// }
 		// defer rows.Close()
 
 		for rows.Next() {
@@ -1008,6 +1159,15 @@ func main() {
 
 	// buy ticket by id
 	r.POST("/api/ticket/buy", func(c *gin.Context) {
+		// if c.PostForm("ticktId") == "" {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Ticket id is required"})
+		// 	return
+		// }
+		var request BuyTicket
+		if err := c.ShouldBind(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		authHeader := c.GetHeader("Authorization")
 		bearerToken := strings.Split(authHeader, " ")
 		jwtClaims := jwt.MapClaims{}
@@ -1035,11 +1195,11 @@ func main() {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		}
 
-		deletedTicket, err := db.Exec("INSERT INTO `boughttickets`(`ticketId`, `userId`) VALUES (? , ?)", c.PostForm("ticktId"), jwtClaims["userId"])
+		boughtTicket, err := db.Exec("INSERT INTO `boughttickets`(`ticketId`, `userId`) VALUES (? , ?)", request.TicketId, jwtClaims["userId"])
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
-		affected, err := deletedTicket.RowsAffected()
+		affected, err := boughtTicket.RowsAffected()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
@@ -1047,7 +1207,7 @@ func main() {
 			c.JSON(http.StatusNotFound, gin.H{"error": "User's ticket not found"})
 			return
 		}
-		c.JSON(http.StatusOK, "User successfully bought ticket.")
+		c.JSON(http.StatusOK, "User successfully bought a ticket.")
 	})
 
 	// get all users bought tickets
@@ -1337,6 +1497,19 @@ func main() {
 		// get user id from jwt
 		var found ReviewValid
 
+		var request ReviewValid
+		if err := c.ShouldBind(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Bind Error1: " + err.Error()})
+			return
+		}
+
+		// var review Review
+		// if err := c.ShouldBind(&review); err != nil {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Bind error2: " + err.Error()})
+		// 	return
+		// }
+		// fmt.Print(colorGreen, request.EventId, colorEnd)
+
 		authHeader := c.GetHeader("Authorization")
 		bearerToken := strings.Split(authHeader, " ")
 		jwtClaims := jwt.MapClaims{}
@@ -1364,7 +1537,7 @@ func main() {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		}
 
-		ticketUsed := db.QueryRow("SELECT boughttickets.ticketId, boughttickets.userId, tickets.used FROM `boughttickets` INNER JOIN tickets ON boughttickets.ticketId = tickets.id WHERE boughttickets.userId = ?;", jwtClaims["userId"]).Scan(&found.TicketId, &found.UserId, &found.TicketUsed)
+		ticketUsed := db.QueryRow("SELECT boughttickets.ticketId, boughttickets.userId, tickets.eventId FROM `boughttickets` INNER JOIN tickets ON boughttickets.ticketId = tickets.id WHERE boughttickets.userId = ? AND tickets.eventId = ?;", jwtClaims["userId"], request.EventId).Scan(&found.TicketId, &found.UserId, &found.EventId)
 		switch {
 		case ticketUsed == sql.ErrNoRows:
 			// not found
@@ -1378,15 +1551,11 @@ func main() {
 			return
 		default:
 			// found
-			var request Review
-			if err := c.ShouldBind(&request); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
-
+			fmt.Print(colorGreen, request.EventId, ":", jwtClaims["userId"], ":", request.Rating, ":", request.Comment, colorEnd)
 			_, err = db.Exec("INSERT INTO `reviews`(`eventId`, `userId`, `rating`, `comment`) VALUES (?, ?, ?, ?);", request.EventId, jwtClaims["userId"], request.Rating, request.Comment)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
 			}
 			c.JSON(http.StatusOK, "Event review created successfully.")
 			return

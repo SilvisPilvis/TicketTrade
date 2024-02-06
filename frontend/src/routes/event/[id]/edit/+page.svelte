@@ -2,7 +2,7 @@
 export let data;
 import axios from "$lib/axios";
 import { onMount } from "svelte";
-import "iconify-icon"
+import "iconify-icon";
 // export let data;
 let res, failed, success, title, description, category, date, location, cover, banner, capacity, seatsRequired, allCategories;
 onMount(async () => {

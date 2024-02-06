@@ -6,7 +6,7 @@ import Cookies from 'js-cookie';
 import { onMount } from "svelte";
 import "iconify-icon"
 // export let data;
-let res, allReviews, failed, success, reviewRating, reviewComment, userId = 1;
+let res, allReviews, failed, success, reviewRating, reviewComment;
 onMount(async () => {
     try{
         const response = await axios.get(`http://localhost:8000/api/event/${data.data}`);
@@ -24,14 +24,14 @@ onMount(async () => {
 })
 
 function buyTicket(){
-    window.location.replace(`/event/${data.data}/ticket/buy`);
+    window.location.replace(`/event/${data.data}/tickets`);
 }
 
 function postReview(){
     const config = {
             headers: { Authorization: `Bearer ${Cookies.get('token')}` }
         };
-    if(reviewRating <= 0 || reviewRating > 5){
+    if(reviewRating <= 0 || reviewRating > 5 || reviewRating == undefined){
         failed = "Rating must be in range from 1 to 5.";
         return;
     }else{
@@ -43,9 +43,9 @@ function postReview(){
     }else{
         failed = "";
     }
+    console.log(Number(data.data));
     axios.post("http://127.0.0.1:8000/api/review", {
             eventId: Number(data.data),
-            userId: userId,
             rating: reviewRating,
             comment: reviewComment
         }, config)

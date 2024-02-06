@@ -2,11 +2,21 @@
     // import axios from "$lib/axios";
     import axios from "axios";
     import { onMount } from "svelte";
-    let data, failure, criteria, order, category;
+    let data, failure, criteria, order, category, keyword,  allCat;
     onMount(async () => {
         try{
-            const res = await axios.get('http://localhost:8000/api/events');
-            // const res = await axios.get('/events');
+            // get all categories
+            const resp = await axios.get('http://localhost:8000/api/categories');
+            allCat = resp.data;
+            criteria = "eventDate"
+            order = "ASC";
+            keyword = "";
+            category = allCat[0]["Id"]
+            // console.log(allCat[0]["Id"]);
+
+            // get all events
+            const res = await axios.get(`http://localhost:8000/api/events?criteria=${criteria}&order=${order}&category=${category}&keyword=${keyword}`)
+            // const res = await axios.get('http://localhost:8000/api/events');
             data = res.data;
             console.log(res.data);
 
@@ -14,10 +24,18 @@
             // data = await res.json();
             // console.log(data);
         }catch (e){
-            console.error("Error:", e.response.data.error);
+            console.error("Error:", e.response);
             failure = e.response.data.error;
         }
     })
+
+    async function refresh(){
+        // get all events
+        const res = await axios.get(`http://localhost:8000/api/events?criteria=${criteria}&order=${order}&category=${category}&keyword=${keyword}`)
+        // const res = await axios.get('http://localhost:8000/api/events');
+        data = res.data;
+        console.log(res.data);
+    }
 
     function deleteEvent(id){
     axios.delete(`http://localhost:8000/api/event/${id}`)
@@ -33,18 +51,26 @@
 </script>
 
 <main>
-    <select name="" id="" bind:value={criteria}>
-        <option value="createdAt">Date</option>
-        
+    {#if data != "" && data != undefined}
+    Filter: 
+    <select name="" id="" bind:value={category} on:change={refresh}>
+        {#if allCat}
+            {#each allCat as category}
+                <option value={category.Id}>{category.CategoryName}</option>
+            {/each}
+        {/if}
     </select>
-    <select name="" id="" bind:value={category}>
-        <option value="eventCategory">Genre</option>
+    Order By:
+    <select name="" id="" bind:value={criteria} on:change={refresh}>
+        <option value="eventDate">Event Date</option>
+        <option value="eventName">Event Name</option>
+        <option value="eventCapacity">Event Capacity</option>
     </select>
-    <select name="" id="" bind:value={order}>
+    <select name="" id="" bind:value={order} on:change={refresh}>
         <option value="ASC">Ascending</option>
         <option value="DESC">Descending</option>
     </select>
-    {#if data != "" && data != undefined}
+    <input type="text" name="" id="" bind:value={keyword} on:change={refresh}>
     <h1 class="title">Newest Events:</h1>
         {#each data as events}
         <div class="actions flex row">
@@ -72,6 +98,9 @@
 </main>
 
 <style>
+    select{
+        margin-top: 5rem;
+    }
     main{
         padding-bottom: 5rem;
     }
@@ -123,5 +152,8 @@
         background-color: var(--bg);
         color: var(--fg);
         border-radius: 0.4rem;
+    }
+    .margin-t{
+        margin-top: 5rem;
     }
 </style>
