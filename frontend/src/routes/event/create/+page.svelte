@@ -37,48 +37,80 @@ function createEvent(){
         failed = "Event name can't be empty.";
         return;
     }
+    else{
+        failed = "";
+    }
+
     if(description == "" || description == undefined){
         failed = "Description can't be empty.";
         return;
     }
+    else{
+        failed = "";
+    }
+
     if(category == null || category == undefined){
         failed = "Category can't be empty.";
         return;
+    }
+    else{
+        failed = "";
     }
     if(date == "" || date == undefined){
         failed = "Date can't be empty.";
         return;
     }
+    else{
+        failed = "";
+    }
     if(Date.parse(date)-Date.parse(new Date()) < 0){
         failed = "Date can't be in past.";
         return;
+    }
+    else{
+        failed = "";
     }
     if(location == "" || location == undefined){
         failed = "Location can't be empty.";
         return;
     }
+    else{
+        failed = "";
+    }
     if(cover == "" || cover == undefined){
         failed = "Cover can't be empty.";
         return;
+    }
+    else{
+        failed = "";
     }
     if(banner == "" || banner == undefined){
         failed = "Banner can't be empty.";
         return;
     }
+    else{
+        failed = "";
+    }
     if(capacity <= 0 || capacity == undefined || capacity == null){
         failed = "Capcity must be greather than 0.";
     }
+    else{
+        failed = "";
+    }
     // console.log(String(JSON.stringify(createTypes)));
+    if(sumValues(createTypes) <= 0 || capacity <=0){
+        failed = "Number of tickets must be greater than 0 and/or sum of all ticket types must be greater than 0.";
+        return;
+    }
+    else{
+        failed = "";
+    }
     if(sumValues(createTypes) != capacity){
         console.error("Number of tickets must match the sum of all ticket types.")
         failed = "Number of tickets must match the sum of all ticket types.";
         return;
     }else{
         failed = "";
-    }
-    if(sumValues(createTypes) <= 0 || capacity <=0){
-        failed = "Number of tickets must be greater than 0 and/or sum of all ticket types must be greater than 0.";
-        return;
     }
 
     axios.post('/event/create', {
@@ -116,12 +148,6 @@ function addTicketType(id, amount, test){
 
 <main class="flex col cen">
     <div class="margin-t flex col cen">
-        {#if success != "" && success != undefined}
-            <p class="success">{success}</p>
-        {/if}
-        {#if failed != "" && failed != undefined}
-            <p class="error">{failed}</p>
-        {/if}
         <label for="">
             Event name:
             <input type="text" name="" id="" bind:value={title}>
@@ -176,6 +202,12 @@ function addTicketType(id, amount, test){
                 {/each}
             {/if}
         </label>
+        {#if success != "" && success != undefined}
+            <p class="success">{success}</p>
+        {/if}
+        {#if failed != "" && failed != undefined}
+            <p class="error">{failed}</p>
+        {/if}
         <button on:click={createEvent}>Create Event</button>
     </div>
 </main>

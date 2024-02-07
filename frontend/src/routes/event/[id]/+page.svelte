@@ -51,11 +51,13 @@ function postReview(){
         }, config)
         .then(function (response) {
             // console.log(response);
-            success = response.data
+            success = response.data;
+            failed = "";
         })
         .catch(function (error) {
             console.log(error);
             failed = error.response.data.error;
+            success = "";
         });
 }
 
@@ -66,11 +68,13 @@ function deleteReview(id){
     axios.delete(`http://127.0.0.1:8000/api/reviews/${id}`, config)
         .then(function (response) {
             console.log(response);
-            success = response.data
+            success = response.data;
+            failed = "";
         })
         .catch(function (error) {
             console.log(error);
             failed = error.response.data.error;
+            success = "";
         });
 }
 </script>

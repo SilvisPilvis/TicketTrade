@@ -35,10 +35,12 @@
         .then(function (response) {
             console.log(response.data);
             success = response.data;
+            fail = "";
         })
         .catch(function (error) {
             console.log(error);
             fail = error.response.data.error;
+            success = "";
         });
     }
     </script>
@@ -81,7 +83,11 @@
         height: min-content;
         margin: 0;
     }
+    p.error, p.success{
+        max-width: 14rem;
+    }
     input {
+        display: flex;
         padding: 1rem;
         border: none;
         outline: none;

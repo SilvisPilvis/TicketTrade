@@ -1,6 +1,6 @@
 <script>
     import axios from "$lib/axios"
-    let categoryName, success;
+    let categoryName, success, fail;
     
     function createCategory(){
         axios.post('/category/create', {
@@ -12,6 +12,8 @@
         })
         .catch(function (error) {
             console.log(error);
+            fail = error.response.data.error;
+            success = "";
         });
     }
 </script>
@@ -23,6 +25,9 @@
 </label>
 {#if success != undefined && success != ""}
     <p class="success">{success}</p>
+{/if}
+{#if fail}
+    <p class="error">{fail}</p>
 {/if}
 <button on:click={createCategory}>Create Category</button>
 </main>

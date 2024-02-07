@@ -20,10 +20,12 @@
             .then(function (response) {
                 console.log(response.data);
                 success = response.data;
+                fail = "";
             })
             .catch(function (error) {
                 console.log(error);
                 fail = error.response.data.error;
+                success = "";
             });
         }
     }

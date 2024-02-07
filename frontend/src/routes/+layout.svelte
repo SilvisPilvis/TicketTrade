@@ -14,6 +14,7 @@
         })
         .catch(function (error) {
             Cookies.remove('token');
+            window.location.replace("/login");
             console.log(error.response);
             // failed = error.response.data.error;
         });

@@ -726,16 +726,20 @@ func main() {
 		// 	}
 		// }
 
-		// rows, err := *&sql.Rows{}, ""
+		rows, err := &sql.Rows{}, errors.New("")
 
+		fmt.Println("Keyword len: ", len(params["keyword"][0]))
 		events := make([]*GetEvent, 0)
-		// if params["keyword"][0] == "" || " " {
-		// 	rows, err = db.Query("SELECT * FROM `events` WHERE eventCategory = ? ORDER BY ? "+params["order"][0]+";", params["category"][0], params["criteria"][0])
-		// } else {
-		// 	rows, err = db.Query("SELECT * FROM `events` WHERE eventCategory = ? AND `eventName` LIKE '%"+params["keyword"][0]+"%' ORDER BY ? "+params["order"][0]+";", params["category"][0], params["criteria"][0])
-		// }
+		if len(params["keyword"][0]) <= 0 {
+			fmt.Println("No keyword.")
+			rows, err = db.Query("SELECT * FROM `events` WHERE eventCategory = ? ORDER BY "+params["criteria"][0]+" "+params["order"][0]+";", params["category"][0])
+			// fmt.Print(rows, "\n")
+		} else {
+			fmt.Println("Found keyword.")
+			rows, err = db.Query("SELECT * FROM `events` WHERE eventCategory = ? AND `eventName` LIKE '%"+params["keyword"][0]+"%' ORDER BY ? "+params["order"][0]+";", params["category"][0], params["criteria"][0])
+		}
 
-		rows, err := db.Query("SELECT * FROM `events` WHERE eventCategory = ? AND `eventName` LIKE '%"+params["keyword"][0]+"%' ORDER BY ? "+params["order"][0]+";", params["category"][0], params["criteria"][0])
+		// rows, err := db.Query("SELECT * FROM `events` WHERE eventCategory = ? AND `eventName` LIKE '%"+params["keyword"][0]+"%' ORDER BY ? "+params["order"][0]+";", params["category"][0], params["criteria"][0])
 
 		if err != nil {
 			log.Fatal(err)
@@ -898,7 +902,7 @@ func main() {
 			return
 		}
 		var dbData Category
-		event := db.QueryRow("SELECT * FROM `categories` WHERE categoryName = ?;", request.CategoryName).Scan(&dbData.CategoryName)
+		event := db.QueryRow("SELECT categoryName FROM `categories` WHERE categoryName = ?;", request.CategoryName).Scan(&dbData.CategoryName)
 		switch {
 		case event == sql.ErrNoRows:
 			// not found
@@ -1662,7 +1666,7 @@ func generateTickets(conn *sql.DB, err error, request Event, lastInsertedEventId
 			panic(err)
 		}
 	}
-	c.JSON(http.StatusOK, "Ticket for "+request.EventName+" created successfully.")
+	// c.JSON(http.StatusOK, "Ticket for "+request.EventName+" created successfully.")
 }
 
 var errInvalidFormat = errors.New("invalid format")
