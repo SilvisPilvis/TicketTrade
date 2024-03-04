@@ -146,7 +146,7 @@ function addTicketType(id, amount, test){
 }
 </script>
 
-<main class="flex col cen">
+<main class="flex col">
     <div class="margin-t flex col cen">
         <label for="">
             Event name:
@@ -166,22 +166,26 @@ function addTicketType(id, amount, test){
                 {/if}
             </select>
         </label>
-        <label for="" >
-            Event date:
-            <input type="datetime-local" name="" id="" bind:value={date}>
-        </label>
-        <label for="">
-            Event location:
-            <input type="text" name="" id="" bind:value={location}>
-        </label>
-        <label for="">
-            Event image/cover:
-            <input type="text" name="" id="" bind:value={cover}>
-        </label>
-        <label for="">
-            Event banner:
-            <input type="text" name="" id="" bind:value={banner}>
-        </label>
+        <div class="flex row cen">
+            <label for="" class="half">
+                Event date:
+                <input type="datetime-local" name="" class="half-r" id="" bind:value={date}>
+            </label>
+            <label for="" class="half">
+                Event location:
+                <input type="text" name="" id="" class="half-l" bind:value={location}>
+            </label>
+        </div>
+        <div class="flex row">
+            <label for="" class="half">
+                Event image/cover:
+                <input type="text" name="" id="" class="half-r" bind:value={cover}>
+            </label>
+            <label for="" class="half">
+                Event banner:
+                <input type="text" name="" id="" class="half-l" bind:value={banner}>
+            </label>
+        </div>
         <label for="">
             Are seats required for this event?
             <input type="checkbox" class="flex check" name="" id="" bind:checked={seatsRequired}>
@@ -195,7 +199,7 @@ function addTicketType(id, amount, test){
             Ticket Types:
             {#if allTypes != "" && allTypes != undefined}
                 {#each allTypes as type}
-                <label for="">
+                <label for="" class="flex col cen">
                     {type.typeName}
                     <input type="number" name="" id="" min="0" step="1" onchange="" on:change={(e) => addTicketType(type.Id, e.target.value, createTypes)}>
                 </label>
@@ -213,41 +217,48 @@ function addTicketType(id, amount, test){
 </main>
 
 <style>
+    /* .left{
+        margin-left: 5rem;
+    } */
     .margin-t{
         margin-top: 5rem;
+        /* width: 100%; */
     }
     .check{
         display: flex;
-        /* justify-content: space-between; */
-        align-items: flex-start;
+    }
+    .half{
+        width: 40vw;
+    }
+    .half-l{
+        width: 38vw;
+        /* margin: 0 0 0 2vw; */
+    }
+    .half-r{
+        width: 38vw;
+        /* margin: 0 2vw 0 0; */
+    }
+    label{
+        width: 80vw;
+    }
+    textarea{
+        resize: none;
     }
     input, select, textarea{
-        /* margin: 1rem; */
         width: 100%;
         gap: 1rem;
         padding: 1rem;
         border: none;
         border-radius: 0.4rem;
-        background-color: var(--bg);
-        resize: none;
-        align-items: flex-start;
+        background-color: var(--fg);
         margin-bottom: 1rem;
-        /* border: 1px solid red; */
-    }
-    label{
-        width: 100%;
-        /* border: 1px solid red; */
-        align-items: flex-start;
-        display: flex;
-        flex-direction: column;
-        /* justify-content: ; */
-        /* align-items: ; */
     }
     button{
+        width: 80vw;
         margin: 1rem;
         padding: 1rem;
         border-radius: 0.4rem;
         border: none;
-        background-color: var(--bg);
+        background-color: var(--button-fill);
     }
 </style>

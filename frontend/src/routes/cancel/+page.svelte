@@ -8,4 +8,7 @@
     .margin-t{
         margin-top: 5rem;
     }
+    main{
+        height: 100%;
+    }
 </style>

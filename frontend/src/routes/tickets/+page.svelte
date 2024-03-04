@@ -24,7 +24,7 @@
                 <img src={"http://localhost:8000/"+ticket.TickedQRPath} alt="">
                 <p>{ticket.TicketDate}</p>
                 <p>{ticket.TicketLocation}</p>
-                <p>{ticket.TicketSeat}</p>
+                <p>Seat: {ticket.TicketSeat}</p>
             </div>
         {/each}
     </div>
@@ -40,7 +40,9 @@
         font-weight: 900;
     }
     .ticket{
-        background-color: var(--bg);
+        width: 15rem;
+        /* height: ; */
+        background-color: var(--fg);
         border-radius: 0.4rem;
         margin: 1rem;
         padding: 1rem;

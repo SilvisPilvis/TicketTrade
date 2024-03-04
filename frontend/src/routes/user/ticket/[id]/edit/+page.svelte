@@ -44,7 +44,7 @@ function updateBoughtTicketData(){
 
 <main class="flex col cen">
     {#if res != "" && res != undefined}
-        <div class="margin-t flex col">
+        <div class="margin-t flex col cen">
             <label for="">
                 Users Id:
                 <input type="number" min="1" step="1" bind:value={userId}>
@@ -71,6 +71,15 @@ function updateBoughtTicketData(){
 </main>
 
 <style>
+    main{
+        height: 100%;
+    }
+    label{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
     .margin-t{
         margin-top: 5rem;
     }
@@ -84,9 +93,10 @@ function updateBoughtTicketData(){
         margin: 1rem;
     }
     button {
+        width: 13.9rem;
         background-color: var(--bg);
         border-radius: 0.4rem;
-        padding: 0.7rem 5.7rem 0.7rem 5.7rem;
+        padding: 0.7rem 1.7rem 0.7rem 1.7rem;
         border: none;
         outline: none;
     }

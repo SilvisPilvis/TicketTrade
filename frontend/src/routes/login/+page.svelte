@@ -41,6 +41,7 @@
     
 <main class="flex cen">
     <div class="flex cen col">
+        <h1>Login</h1>
         <input type="text" name="username" id="" bind:value={username} placeholder="username">
         {#if usernameError != false}
             <p class="error">Username can't be empty.</p>
@@ -84,13 +85,13 @@
         padding: 1rem;
         border: none;
         outline: none;
-        border-radius: 0.2rem;
-        background-color: var(--bg);
+        border-radius: 0.4rem;
+        background-color: var(--fg);
         font-size: 12pt;
         margin: 1rem;
     }
     button {
-        background-color: var(--bg);
+        background-color: var(--button-fill);
         border-radius: 0.4rem;
         padding: 0.7rem 5.7rem 0.7rem 5.7rem;
         border: none;

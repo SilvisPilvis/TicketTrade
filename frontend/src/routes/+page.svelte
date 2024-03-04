@@ -2,7 +2,8 @@
     // import axios from "$lib/axios";
     import axios from "axios";
     import { onMount } from "svelte";
-    let data, failure, criteria, order, category, keyword,  allCat;
+    import Cookies from "js-cookie";
+    let data, failure, criteria, order, category, keyword,  allCat, isAdmin;
     onMount(async () => {
         try{
             // get all categories
@@ -20,12 +21,23 @@
             data = res.data;
             console.log(res.data);
 
+
+            if(Cookies.get('token') != undefined){
+                const config = {
+                    headers: { Authorization: `Bearer ${Cookies.get('token')}` }
+                };
+                const temp = await axios.post('/admin', {}, config);
+                console.log(temp.data);
+                isAdmin = temp.data;
+            }
+
             // const res = await fetch('http://localhost:8000/api/events');
             // data = await res.json();
             // console.log(data);
         }catch (e){
             console.error("Error:", e.response);
-            failure = e.response.data.error;
+            // failure = e.response.data.error;
+            isAdmin = e.response.data;
         }
     })
 
@@ -50,42 +62,49 @@
 }
 </script>
 
-<main>
+<main class="flex col cen">
+    <div class="flex row margin-t cen">
+        <!-- Filter:  -->
+        <select name="" id="" bind:value={category} on:change={refresh}>
+            <option value="">All</option>
+            {#if allCat}
+                {#each allCat as category}
+                    <option value={category.Id}>{category.CategoryName}</option>
+                {/each}
+            {/if}
+        </select>
+        <!-- Sort By: -->
+        <select name="" id="" bind:value={criteria} on:change={refresh}>
+            <option value="eventDate">Event Date</option>
+            <option value="eventName">Event Name</option>
+            <option value="eventCapacity">Event Capacity</option>
+        </select>
+        <select name="" id="" bind:value={order} on:change={refresh}>
+            <option value="ASC">Ascending</option>
+            <option value="DESC">Descending</option>
+        </select>
+        <input type="text" name="" id="" bind:value={keyword} on:change={refresh} placeholder="Keyword">
+    </div>
     {#if data != "" && data != undefined}
-    Filter: 
-    <select name="" id="" bind:value={category} on:change={refresh}>
-        {#if allCat}
-            {#each allCat as category}
-                <option value={category.Id}>{category.CategoryName}</option>
-            {/each}
-        {/if}
-    </select>
-    Order By:
-    <select name="" id="" bind:value={criteria} on:change={refresh}>
-        <option value="eventDate">Event Date</option>
-        <option value="eventName">Event Name</option>
-        <option value="eventCapacity">Event Capacity</option>
-    </select>
-    <select name="" id="" bind:value={order} on:change={refresh}>
-        <option value="ASC">Ascending</option>
-        <option value="DESC">Descending</option>
-    </select>
-    <input type="text" name="" id="" bind:value={keyword} on:change={refresh}>
     <h1 class="title">Newest Events:</h1>
         {#each data as events}
-        <div class="actions flex row">
-            <a href={"/event/"+events.Id+"/edit"} class="flex cen">Edit Event</a>
-            <button on:click={() => deleteEvent(events.Id)}>Delete Event</button>
-        </div>
         <a href="/event/{events.Id}">
-            <div class="flex row card">
+            <div class="flex row card border">
                 <img src={events.EventImage} alt="" loading="lazy">
                 <div class="flex col desc">
                     <h1>{events.EventName}</h1>
-                    <div class="flex col left">
+                    <div class="flex flex-end">
                         <p>{events.EventDescription}</p>
-                        <p>{events.EventLocation}</p>
-                        <p>{events.EventDate}</p>
+                        <div class="flex row left">
+                            <p class="icon gap flex"><iconify-icon icon="bi:geo-alt-fill"></iconify-icon>{events.EventLocation}</p>
+                            <p class="icon gap flex"><iconify-icon icon="bi:calendar-week"></iconify-icon>{events.EventDate}</p>
+                        </div>
+                        {#if isAdmin} 
+                        <div class="flex row test">
+                            <a href={"/event/"+events.Id+"/edit"} class="flex cen button"><iconify-icon icon="bi:pencil"></iconify-icon></a>
+                            <button on:click={() => deleteEvent(events.Id)} class="button"><iconify-icon icon="bi:trash"></iconify-icon></button>
+                        </div>
+                        {/if}
                     </div>
                 </div>
             </div>
@@ -98,8 +117,32 @@
 </main>
 
 <style>
+    /* .test{
+        position: relative;
+        bottom: -45%;
+    } */
+    img{
+        width: 20rem;
+    }
+    h1{
+        height: 3rem;
+    }
+    input{
+        border: none;
+        outline: none;
+        border-radius: 0.2rem;
+        background-color: var(--fg);
+        font-size: 12pt;
+        height: 2rem;
+    }
     select{
-        margin-top: 5rem;
+        /* margin-top: 5rem; */
+        margin: 0.5rem;
+        height: 2rem;
+        border-radius: 0.2rem;
+        background-color: var(--fg);
+        border: none;
+        outline: none;
     }
     main{
         padding-bottom: 5rem;
@@ -112,6 +155,12 @@
         border-radius: 0.4rem;
         max-height: 30rem;
     }
+    .gap{
+        gap: 1rem;
+    }
+    .icon{
+        align-items: center;
+    }
     .left{
         justify-content: center;
         align-items: flex-start;
@@ -119,23 +168,23 @@
     .desc{
         margin-left: 1rem;
         width: 20rem;
+        justify-content: center;
     }
     .card{
-        margin-left: 4rem;
+        /* margin-left: 4rem; */
+        /* gap: 1rem; */
         margin-bottom: 1rem;
         margin-top: 1rem;
-        background-color: var(--bg);
+        background-color: var(--fg);
         width: 62rem;
         border-radius: 0.4rem;
     }
     .actions, .title{
         margin-left: 4rem;
     }
-    .actions>a, .actions>button{
-        margin: 0.5rem 0.7rem 0.5rem 0.7rem;
-    }
     .actions>a{
-        background-color: var(--bg);
+        margin: 0.5rem 0.7rem 0.5rem 0.7rem;
+        background-color: var(--fg);
         padding: 0.7rem;
         border-radius: 0.4rem;
     }
@@ -144,14 +193,15 @@
         width: 37rem;
     }
     button{
-        margin-top: 3rem;
-        margin-left: 1rem;
+        /* margin-top: 3rem;
+        margin-left: 1rem; */
         outline: none;
         border: none;
         padding: 0.75rem;
-        background-color: var(--bg);
-        color: var(--fg);
+        background-color: var(--button-fill);
+        color: white;
         border-radius: 0.4rem;
+        margin: 0.25rem;
     }
     .margin-t{
         margin-top: 5rem;

@@ -49,6 +49,7 @@
 
 <main class="flex col cen">
     <div class="margin-t flex col">
+        <h1>Edit Ticket Type</h1>
         <input type="text" name="typeName" id="" bind:value={typeName}>
         <input type="number" name="typePrice" id="" min="0.01" step="0.01" bind:value={typePrice}>
         {#if failure != "" && failure != undefined}
@@ -62,14 +63,22 @@
 </main>
 
 <style>
+    main{
+        height: 100%;
+    }
     .margin-t{
         margin-top: 5rem;
+    }
+    input{
+        background-color: var(--fg);
+    }
+    button{
+        background-color: var(--button-fill);
     }
     button, input{
         border: none;
         margin: 0.5rem;
         padding: 0.7rem;
         border-radius: 0.4rem;
-        background-color: var(--bg);
     }
 </style>

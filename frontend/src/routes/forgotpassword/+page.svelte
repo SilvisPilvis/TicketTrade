@@ -32,6 +32,7 @@
 
 <main class="flex col cen">
     <div class="margin-t flex col cen">
+        <h1>Forgot password:</h1>
         <input type="email" bind:value={email} placeholder="email">
         <input type="password" name="" id="" bind:value={password} placeholder="new password">
         <button on:click={resetPassword}>Reset Password</button>
@@ -53,8 +54,15 @@
         border: none;
         outline: none;
         border-radius: 0.4rem;
-        background-color: var(--bg);
+        background-color: var(--fg);
         font-size: 12pt;
         margin: 1rem;
+    }
+    button{
+        padding: 1rem 3.2rem 1rem 3.2rem;
+        background-color: var(--button-fill);
+    }
+    main{
+        height: 100%;
     }
 </style>

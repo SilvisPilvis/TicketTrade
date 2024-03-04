@@ -6,24 +6,44 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<style>
 			:root{
-		        --bg: #B4ADEA;
-        		--fg: #4F0147;
+		        --bg: #0B0A10;
+        		--fg: #1B1725;
         		--real-bg:#dddaf2;
+				--border:#D0BCD5;
+				--button-fill:#2E273F;
+				--button-text:#D0BCD5;
 			}
 /*			@import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');*/
-			@import url('https://fonts.googleapis.com/css2?family=Azeret+Mono&display=swap');
+			/* @import url('https://fonts.googleapis.com/css2?family=Azeret+Mono&display=swap'); */
 			* , *::after, *::before {
 /*				font-family: 'Space Mono', monospace;*/
-				font-family: 'Azeret Mono', monospace;
+				/* font-family: 'Azeret Mono', monospace; */
+				font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 	            box-sizing: border-box;
 	            min-width: 0;
 	            padding: 0;
 	            margin: 0;
-	            color: var(--fg);
+	            color: white;
 			}
 			body{
-				background-color: #dddaf2;
+				background-color: var(--bg);
 				height: 100vh;
+			}
+			.between{
+				justify-content: space-around;
+			}
+			.button{
+				background-color: var(--button-fill);
+				border-radius: 0.4rem;
+				margin: 0.25rem;
+				width: 2.5rem;
+				height: 2.5rem;
+			}
+			.border{
+				border: 2px var(--border) solid;
+			}
+			.flex-end{
+				justify-content: flex-end;
 			}
 			.flex{
 				display: flex;
@@ -40,7 +60,7 @@
 				align-items: center;
 			}
 		    .error{
-		        color: red;
+		        color: red !important;
 				padding: 0.3rem;
 		    	border-radius: 0.25rem;
 		        /* background-color: #b54a3a; */
@@ -48,7 +68,7 @@
 		    .success{
 		    	padding: 0.3rem;
 		    	border-radius: 0.25rem;
-		    	color: lightgreen;
+		    	color: lightgreen !important;
 		    	/* background-color: green; */
 			}
 			p.error, p.success{

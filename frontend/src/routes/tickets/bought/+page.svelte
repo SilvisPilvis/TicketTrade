@@ -22,7 +22,7 @@
             <div class="ticket">
                 <p>{ticket.EventName}</p>
                 <p>{ticket.TicketBoughtAt}</p>
-                <p>{ticket.UserName}</p>
+                <p>User: {ticket.UserName}</p>
             </div>
         {/each}
     </div>
@@ -38,7 +38,8 @@
         margin-top: 5rem;
     }
     .ticket{
-        background-color: var(--bg);
+        width: 15rem;
+        background-color: var(--fg);
         border-radius: 0.4rem;
         margin: 1rem;
         padding: 1rem;

@@ -5,6 +5,17 @@ import Cookies from "js-cookie";
 // export let data;
 let changedPass, changedUsername, failed, success;
 
+// onMount(async () => {
+//     try{
+//         const response = await axios.get(`/${data.data}/tickets`);
+//         res = response.data;
+//         console.log(res);
+//     }catch (e){
+//         console.error("Error:", e);
+//         failed = e.response.data.error;
+//     }
+// });
+
 function changeUsername(){
     const config = {
         headers: { Authorization: `Bearer ${Cookies.get('token')}` }
@@ -41,13 +52,25 @@ function changePassword(){
 </script>
 
 <main class="flex col cen">
-    <div class="margin-t flex col">
-        <label class="flex col">
+    <!-- <div class="flex cen row">
+        {#each res as ticket}
+            <div class="ticket">
+                <p class="name">{ticket.EventName}</p>
+                <p>User: {ticket.UserName}</p>
+                <p>{ticket.TicketBoughtAt}</p>
+                <p>{ticket.TicketLocation}</p>
+                <p>{ticket.TicketDate}</p>
+                <p>{ticket.TicketSeat}</p>
+            </div>
+        {/each}
+    </div> -->
+    <div class="margin-t flex col cen">
+        <label class="flex col cen">
             Change Username:
             <input type="text" bind:value={changedUsername}/>
             <button on:click={changeUsername}>Change Username</button>
         </label>
-        <label class="flex col">
+        <label class="flex col cen">
             Change password:
             <input type="password" bind:value={changedPass}/>
             <button on:click={changePassword}>Change Password</button>
@@ -62,6 +85,9 @@ function changePassword(){
 </main>
 
 <style>
+    main{
+        height: 100%;
+    }
     .margin-t{
         margin-top: 5rem;
     }
@@ -72,8 +98,16 @@ function changePassword(){
         display: flex;
         margin: 1rem;
         padding: 0.7rem;
+        width: 16rem;
         border-radius: 0.4rem;
-        background-color: var(--bg);
+        background-color: var(--fg);
         border: none;
+    }
+    button{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* text-align: center; */
+        background-color: var(--button-fill);
     }
 </style>

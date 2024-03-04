@@ -26,13 +26,13 @@
 </script>
 <main class="flex col cen">
     {#if res != "" && res != undefined}
-    <div class="margin-t">
+    <div class="margin-t flex row">
         {#each res as ticket}
-            <div class="ticket">
+            <div class="ticket flex row">
                 {ticket.EventName}
                 {ticket.TicketDate}
                 {ticket.TicketLocation}
-                <a href={"/ticket/buy/"+ ticket.Id}><iconify-icon icon="mdi:cart-variant"  style="color: black"></iconify-icon></a>
+                <a href={"/ticket/buy/"+ ticket.Id}><iconify-icon icon="mdi:cart-variant"  style="background-color: var(--button-fill);"></iconify-icon></a>
             </div>
         {/each}
     </div>
@@ -44,8 +44,17 @@
     .margin-t{
         margin-top: 5rem;
     }
+    a{
+        display: flex;
+        padding: 0.5rem;
+        width: 2em;
+        height: 2rem;
+        border-radius: 0.4rem;
+        background-color: var(--button-fill);
+        margin-left: 0.5rem;
+    }
     .ticket{
-        background-color: var(--bg);
+        background-color: var(--fg);
         margin: 1rem;
         padding: 1rem;
         border-radius: 0.4rem;

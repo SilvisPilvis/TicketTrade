@@ -32,14 +32,14 @@ function deleteTicketType(id){
 
 <main class="flex col cen">
 {#if res != "" && res != undefined}
-    <div class="margin-t">
+    <div class="margin-t flex row cen">
         {#each res as type}
-            <div class="flex row cen">
+            <div class="flex row cen type">
                 <p>{type.typeName}</p>
                 <p> </p>
                 <p>{type.typePrice} €</p>
-                <a href={"/ticket/types/"+type.Id+"/edit"}><iconify-icon icon="material-symbols:edit"  style="color: black"></iconify-icon></a>
-                <button on:click={() => deleteTicketType(type.Id)}><iconify-icon icon="mdi:trash-can"  style="color: black"></iconify-icon></button>
+                <a href={"/ticket/types/"+type.Id+"/edit"} class="flex cen"><iconify-icon icon="material-symbols:edit"  style="background-color: var(--button-fill);"></iconify-icon></a>
+                <button on:click={() => deleteTicketType(type.Id)}><iconify-icon icon="mdi:trash-can"  style="background-color: var(--button-fill);"></iconify-icon></button>
             </div>
         {/each}
         {#if fail != "" && fail != undefined}
@@ -53,14 +53,26 @@ function deleteTicketType(id){
 </main>
 
 <style>
+    .type{
+        background-color: var(--fg);
+        margin: 0.2rem;
+        border-radius: 0.4rem;
+        padding: 0.4rem;
+    }
+    main{
+        width: 100%;
+        height: 100%;
+    }
     .margin-t{
         margin-top: 5rem;
     }
     button, a{
+        width: 1.7rem;
+        height: 1.7rem;
         border: none;
         margin: 0.5rem;
         padding: 0.2rem;
+        background-color: var(--button-fill);
         border-radius: 0.4rem;
-        background-color: transparent;
     }
 </style>

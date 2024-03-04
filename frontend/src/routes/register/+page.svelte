@@ -46,7 +46,7 @@
     </script>
     
     <main class="flex col cen">
-        <div class="margin-t flex col">
+        <div class="margin-t flex col cen">
             <input type="text" name="username" id="" bind:value={username} placeholder="username">
             {#if usernameError != false}
                 <p class="error">Username can't be empty.</p>
@@ -74,6 +74,9 @@
     </main>
     
     <style>
+    main{
+        height: 100%;
+    }
     .margin-t{
         margin-top: 5rem;   
     }
@@ -87,17 +90,21 @@
         max-width: 14rem;
     }
     input {
+        padding: 0.7rem 1rem 0.7rem 1rem;
         display: flex;
-        padding: 1rem;
+        /* padding: 1rem; */
         border: none;
         outline: none;
-        border-radius: 0.2rem;
-        background-color: var(--bg);
+        border-radius: 0.4rem;
+        background-color: var(--fg);
         font-size: 12pt;
         margin: 1rem;
     }
     button {
-        padding: 0.7rem 6rem 0.7rem 6rem;
+        padding: 0.7rem 0rem 0.7rem 0rem;
+        width: 13.7rem;
+        background-color: var(--button-fill);
+        border-radius: 0.4rem;
         border: none;
         outline: none;
     }

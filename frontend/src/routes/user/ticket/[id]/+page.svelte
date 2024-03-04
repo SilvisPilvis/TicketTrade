@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import axios from "$lib/axios";
     import html2PDF from 'jspdf-html2canvas';
+    let success, failed;
     // import html2PDF from 'jspdf-html2canvas';
     // import html2PDF from "html-pdf-adaptive";
 
@@ -33,7 +34,7 @@
 
 <main class="flex col cen">
     {#if res != "" && res != undefined}
-    <div class="margin-t">
+    <div class="margin-t flex col cen">
         <div class="ticket">
             <div class="flex row">
                 <img class="square-img" src={res.TicketImage} alt="">
@@ -83,9 +84,10 @@
     .ticket{
         margin-left: 1rem;
         max-width: 57rem;
-        outline: 2px solid var(--fg);
+        width: 57rem;
+        /* outline: 2px solid var(--fg); */
         border-radius: 0.25rem;
-        background-color: var(--bg);
+        background-color: var(--fg);
 /*        box-shadow: 0px 0px 8px 7px blue;*/
         -webkit-animation:rainbow 1s linear infinite;
     }
@@ -119,8 +121,8 @@
         outline: none;
         border: none;
         padding: 0.75rem;
-        background-color: var(--bg);
-        color: var(--fg);
+        background-color: var(--button-fill);
+        /* color: var(--fg); */
         border-radius: 0.25rem;
     }
 </style>

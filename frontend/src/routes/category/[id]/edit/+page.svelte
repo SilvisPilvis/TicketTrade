@@ -36,7 +36,7 @@
     // console.log(success);
 </script>
 
-<main class="flex col">
+<main class="flex col cen">
 <h1>Edit Category:</h1>
 <input type="text" name="categoryName" id="" bind:value={categoryName} placeholder="Category Name">
 {#if fail != undefined && fail != ""}
@@ -49,24 +49,27 @@
 </main>
 
 <style>
+    main{
+        height: 100%;
+    }
     h1{
         margin-left: 1rem;
     }
      input {
-        align-self: flex-start;
+        /* align-self: flex-start; */
         padding: 1rem;
         border: none;
         outline: none;
         border-radius: 0.2rem;
-        background-color: var(--bg);
+        background-color: var(--fg);
         font-size: 12pt;
         margin: 1rem;
     }
     button {
+        /* align-self: flex-start; */
         border-radius: 0.4rem;
-        margin-left: 1rem;
-        align-self: flex-start;
-        padding: 1.1rem 3.5rem 1.1rem 3.25rem;
+        background-color: var(--button-fill);
+        padding: 1.1rem 4.2rem 1.1rem 4.2rem;
         border: none;
         outline: none;
     }

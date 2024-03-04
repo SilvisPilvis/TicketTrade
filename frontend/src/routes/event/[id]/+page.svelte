@@ -30,15 +30,18 @@ function buyTicket(){
 function postReview(){
     const config = {
             headers: { Authorization: `Bearer ${Cookies.get('token')}` }
-        };
-    if(reviewRating <= 0 || reviewRating > 5 || reviewRating == undefined){
-        failed = "Rating must be in range from 1 to 5.";
+    };
+    if(reviewComment == "" || reviewComment == undefined ){
+        failed = "Comment can't be empty.";
         return;
     }else{
         failed = "";
     }
-    if(reviewComment == "" || reviewComment == undefined ){
-        failed = "Comment can't be empty.";
+    if(isNaN(reviewRating)){
+        failed = "Rating must be a number in range from 1 to 5.";
+    }
+    if(reviewRating <= 0 || reviewRating > 5 || reviewRating == undefined){
+        failed = "Rating must be in range from 1 to 5.";
         return;
     }else{
         failed = "";
@@ -79,52 +82,79 @@ function deleteReview(id){
 }
 </script>
 
-<main>
-    {#if res != "" && res != undefined}
-        <img src={res.eventBanner} alt="" loading="lazy" class="banner">
-        <div class="flex row bg">
-            <img class="cover" src={res.eventImage} alt="" loading="lazy">
-            <div class="description">
-                <h1>{res.eventName}</h1>
-                <div>{res.eventDate}</div>
-                <div>{res.eventLocation}</div>
-                <div>{res.eventDescription}</div>
-                <div>Vietu skaits: {res.eventCapacity}</div>
-            </div>
-        </div>
-    {/if}
-    <button on:click={buyTicket}>Buy Ticket</button>
-    {#if allReviews != "" && allReviews != undefined}
-        {#each allReviews as review}
-            <div class="review">
-                <div class="flex row between">
-                    <p class="flex cen">{review.UserName}</p>
-                    <button class="flex cen" on:click={() => deleteReview(review.Id)}><iconify-icon icon="mdi:trash-can"  style="color: black"></iconify-icon></button>
+<main class="flex col cen">
+    <div class="margin-t">
+        {#if res != "" && res != undefined}
+            <!-- <img src={res.eventBanner} alt="" loading="lazy" class="banner"> -->
+            <div class="flex row bg">
+                <!-- <img class="cover" src={res.eventImage} alt="" loading="lazy"> -->
+                <img src={res.eventBanner} alt="" loading="lazy" class="banner">
+                <div class="description">
+                    <h1>{res.eventName}</h1>
+                    <div class="flex row gap1">
+                        <div class="flex gap"><iconify-icon icon="bi:calendar-week" class="icon"></iconify-icon>{res.eventDate}</div>
+                        <div class="flex gap"><iconify-icon icon="bi:geo-alt-fill" class="icon"></iconify-icon>{res.eventLocation}</div>
+                    </div>
+                    <div>{res.eventDescription}</div>
+                    <div class="seats">Vietu skaits: {res.eventCapacity}</div>
                 </div>
-                <p>{review.Rating}/5</p>
-                <p>{review.Comment}</p>
             </div>
-        {/each}
-    {/if}
-    <p class="rev">Write your own review:</p>
-    <div class="flex cen row">
-        <p class="rev">Review:</p>
-        <input type="text" bind:value={reviewComment}>
-        <p class="rev">Rating:</p>
-        <input type="number" name="" id="" min="1" max="5" step="1" bind:value={reviewRating}>
-        <button on:click={postReview}>Post Review</button>
+        {/if}
+        <div class="flex cen">
+            <button on:click={buyTicket}>Buy Ticket</button>
+        </div>
+        <div class="flex cen row">
+            <input type="text" bind:value={reviewComment} placeholder="Enter review here">
+            <input type="number" name="" id="" min="1" max="5" step="1" bind:value={reviewRating}>
+            <button on:click={postReview}>Post Review</button>
+        </div>
+        {#if failed != undefined && failed != ""}
+            <p class="error">{failed}</p>
+        {/if}
+        {#if success != undefined && success != ""}
+            <p class="success">{success}</p>
+        {/if}
+        {#if allReviews != "" && allReviews != undefined}
+        <div class="flex col cen">
+            {#each allReviews as review}
+                <div class="review">
+                    <div class="flex row between">
+                        <p class="flex cen">{review.UserName}</p>
+                        <button class="flex cen trash" on:click={() => deleteReview(review.Id)}><iconify-icon icon="mdi:trash-can"  style="color: var(--button-text)"></iconify-icon></button>
+                    </div>
+                    <p>{review.Rating}/5</p>
+                    <p>{review.Comment}</p>
+                </div>
+            {/each}
+        </div>
+        {/if}
+        
     </div>
-    {#if failed != undefined && failed != ""}
-        <p class="error">{failed}</p>
-    {/if}
-    {#if success != undefined && success != ""}
-        <p class="success">{success}</p>
-    {/if}
 </main>
 
 <style>
+.seats{
+    font-weight: 700;
+}
 *{
-    color: var(--fg);
+    color: white;
+}
+img{
+    border-radius: 0.4rem;
+}
+.gap{
+    gap: 0.5rem;
+    align-items: center;
+}
+.gap1{
+    gap: 1rem;
+    align-items: center;
+}
+.icon{
+    /* margin: 0 1rem 0 1rem; */
+}
+.margin-t{
+    margin-top: 5rem;
 }
 .between{
     justify-content: space-between;
@@ -160,7 +190,7 @@ function deleteReview(id){
 }
 .review{
     margin: 1rem 0 0 1rem;
-    background-color: var(--bg);
+    background-color: var(--button-fill);
     width: 60rem;
     border-radius: 0.4rem;
     padding-bottom: 1rem;
@@ -178,17 +208,20 @@ function deleteReview(id){
     margin: 1rem 1rem;
 }
 button{
-    background-color: var(--bg);
+    background-color: var(--fg);
     border: none;
-    margin: 1rem 0 0 1rem;
-    padding: 0.5rem;
+    /* margin: 1rem 0 0 1rem; */
+    padding: 1rem;
     border-radius: 0.4rem;
+}
+.trash{
+    padding: 0.5rem;
 }
 input{
     margin: 1rem 1rem;
     padding: 1rem;
     border: none;
     border-radius: 0.4rem;
-    background-color: var(--bg);
+    background-color: var(--button-fill);
 }
 </style>

@@ -17,11 +17,12 @@ onMount(async () => {
 
 <main class="flex col cen">
     {#if res != "" && res != undefined}
-        <div class="margin-t flex cen row">
+    <h1 class="margin-t">Your Tickets:</h1>
+        <div class="flex cen row">
             {#each res as ticket}
                 <div class="ticket">
                     <p class="name">{ticket.EventName}</p>
-                    <p>{ticket.UserName}</p>
+                    <p>User: {ticket.UserName}</p>
                     <p>{ticket.TicketBoughtAt}</p>
                     <p>{ticket.TicketLocation}</p>
                     <p>{ticket.TicketDate}</p>
@@ -41,7 +42,8 @@ onMount(async () => {
         flex-wrap: wrap;
     }
     .ticket{
-        background-color: var(--bg);
+        background-color: var(--fg);
+        width: 15rem;
         border-radius: 0.4rem;
         margin: 1rem;
         padding: 1rem;

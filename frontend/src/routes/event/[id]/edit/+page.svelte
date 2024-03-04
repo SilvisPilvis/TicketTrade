@@ -52,7 +52,7 @@ function updateEventData(){
 
 <main class="flex cen col">
     {#if res != "" && res != undefined}
-    <div class="margin-t flex cen col">
+    <div class="margin-t flex cen col form">
         <label for="">
         Event name:
         <input type="text" name="" id="" bind:value={title}>
@@ -64,7 +64,8 @@ function updateEventData(){
         <label for="">
         Event category:
         <select name="" id=""bind:value={category}>
-        <option value={res.eventCategory}>{res.eventCategory}</option>
+        <!-- <option value={res.eventCategory}>{res.eventCategory}</option> -->
+        <!-- <option value={res.eventCategory}>{res.eventCategory}</option> -->
         {#if allCategories != "" && allCategories != undefined}                
             {#each allCategories as cat}
                 <option value={cat.Id}>{cat.CategoryName}</option>
@@ -88,22 +89,25 @@ function updateEventData(){
             Event banner:
             <input type="text" name="" id="" bind:value={banner}>
         </label>
-        <label for="">
+        <!-- <label for="">
             Are seats required for this event?
             <input type="checkbox" name="" id="" bind:checked={seatsRequired}>
-        </label>
+        </label> -->
+        {#if success != "" && success != undefined}
+            <p class="success">{success}</p>
+        {/if}
+        {#if failed != "" && failed != undefined}
+            <p class="error">{failed}</p>
+        {/if}
         <button on:click={updateEventData}>Update Event</button>
     </div>
-    {/if}
-    {#if success != "" && success != undefined}
-        <p class="success">{success}</p>
-    {/if}
-    {#if failed != "" && failed != undefined}
-        <p class="error">{failed}</p>
     {/if}
 </main>
 
 <style>
+    .form{
+        width: 80vw;
+    }
     .margin-t{
         margin-top: 5rem;
     }
@@ -112,13 +116,31 @@ function updateEventData(){
         padding: 1rem;
         border: none;
         border-radius: 0.4rem;
-        background-color: var(--bg);
+        background-color: var(--fg);
+    }
+    label{
+        width: 100%;
+    }
+    label > input{
+        width: 100%;
+    }
+    select, textarea{
+        width: 100%;
     }
     textarea{
         border: none;
         border-radius: 0.4rem;
-        background-color: var(--bg);
+        background-color: var(--fg);
         resize: none;
+    }
+    label{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    button{
+        background-color: var(--button-fill);
     }
 /*    input[type=checkbox]{
         width: 10rem;

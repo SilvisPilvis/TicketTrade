@@ -109,6 +109,10 @@ type GetOrder struct {
 	Keyword  string `form:"keyword" json:"keyword"`
 }
 
+// type Admin struct {
+// 	Admin string `form:"admin" json:"admin"`
+// }
+
 type TicketTypes struct {
 	Id                int     `form:"id"`
 	TicketTypeName    string  `form:"typeName" json:"typeName" binding:"required"`
@@ -337,6 +341,47 @@ func main() {
 		// c.JSON(200, gin.H{
 		// 	"message": result,
 		// })
+	})
+
+	// check if user is admin
+	r.POST("/api/admin", func(c *gin.Context) {
+		// if c.PostForm("ticktId") == "" {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Ticket id is required"})
+		// 	return
+		// }
+		authHeader := c.GetHeader("Authorization")
+		bearerToken := strings.Split(authHeader, " ")
+		jwtClaims := jwt.MapClaims{}
+		token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtKey), nil
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JWT token." + err.Error()})
+		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// check token expiry
+			expireTime := int64(claims["ExpiresAt"].(float64))
+			now := time.Now().Unix()
+			if now > expireTime {
+				fmt.Println("Token is expired")
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Expired token"})
+				return
+			}
+			jwtClaims = claims
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		}
+		if jwtClaims["username"] == "admin" {
+			c.JSON(http.StatusOK, 1)
+		} else {
+			c.JSON(http.StatusUnauthorized, 0)
+		}
+		// return jwtClaims["userId"]
+
 	})
 
 	r.POST("/add/ticket/:id", func(c *gin.Context) {
@@ -899,6 +944,7 @@ func main() {
 		var request Category
 		if err := c.ShouldBind(&request); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			// c.JSON(http.StatusBadRequest, gin.H{"error": "Fill all fields"})
 			return
 		}
 		var dbData Category
@@ -1217,7 +1263,7 @@ func main() {
 	// get all users bought tickets
 	r.GET("/api/:userId/tickets", func(c *gin.Context) {
 		tickets := make([]*BoughtTicket, 0)
-		rows, err := db.Query("SELECT boughttickets.id, boughttickets.ticketId, boughttickets.userId, boughttickets.createdAt, boughttickets.updatedAt, users.username, tickets.eventName FROM `boughttickets` INNER JOIN users ON boughttickets.userId = users.id INNER JOIN tickets ON boughttickets.ticketId = tickets.id WHERE boughttickets.userId = ?;", c.Param("userId"))
+		rows, err := db.Query("SELECT boughttickets.id, boughttickets.ticketId, boughttickets.userId, boughttickets.createdAt, boughttickets.updatedAt, users.username, tickets.eventName, events.eventImage FROM `boughttickets` INNER JOIN users ON boughttickets.userId = users.id INNER JOIN tickets ON boughttickets.ticketId = tickets.id INNER JOIN events ON tickets.eventId = events.id WHERE boughttickets.userId = ?;", c.Param("userId"))
 
 		if err != nil {
 			log.Fatal(err)
@@ -1226,7 +1272,7 @@ func main() {
 
 		for rows.Next() {
 			ticket := new(BoughtTicket)
-			if err := rows.Scan(&ticket.Id, &ticket.TicketId, &ticket.UserId, &ticket.TicketBoughtAt, &ticket.TicketBoughtAtUpdate, &ticket.UserName, &ticket.EventName); err != nil {
+			if err := rows.Scan(&ticket.Id, &ticket.TicketId, &ticket.UserId, &ticket.TicketBoughtAt, &ticket.TicketBoughtAtUpdate, &ticket.UserName, &ticket.EventName, &ticket.TicketImage); err != nil {
 				panic(err)
 			}
 			tickets = append(tickets, ticket)
@@ -1515,6 +1561,13 @@ func main() {
 		// fmt.Print(colorGreen, request.EventId, colorEnd)
 
 		authHeader := c.GetHeader("Authorization")
+		fmt.Println(colorGreen, authHeader, colorEnd)
+		if authHeader == "Bearer undefined" {
+			fmt.Println(colorGreen, authHeader, colorEnd)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header not found. Please log in."})
+			return
+		}
+
 		bearerToken := strings.Split(authHeader, " ")
 		jwtClaims := jwt.MapClaims{}
 		token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
@@ -1568,11 +1621,6 @@ func main() {
 
 	fmt.Print(colorGreen, "Satarting server on http://localhost:", os.Getenv("PORT"), colorEnd, "\n")
 	fmt.Print(colorRed, "Fix ticket auto SEAT generate", colorEnd, "\n")
-	fmt.Print(colorRed, "Biletes izveidot PDF ar QR kodu", colorEnd, "\n")
-	fmt.Print(colorRed, "Implement ticket VERIFICATION", colorEnd, "\n")
-	fmt.Print(colorRed, "Atstat review tikai tas kurs nopircis bileti", colorEnd, "\n")
-	fmt.Print(colorRed, "Izveidot ReviewHandler", colorEnd, "\n")
-	fmt.Print(colorRed, "Izveidot BoughtTicketsHanlder", colorEnd, "\n")
 	fmt.Print(colorRed, "Split code", colorEnd, "\n")
 
 	// execute database migrations
